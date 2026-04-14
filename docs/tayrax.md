@@ -97,20 +97,21 @@ Adding a new coin = adding one string to the list.
 
 ## Development Phases
 
-### Phase 1 — Simple Alerts
+### Phase 1 — Simple Alerts ✅ Completed (2026-04-14)
 > The bot monitors prices and notifies the user. No trades are executed.
 
-**Features:**
-- Connect to real-time WebSocket feed (CoinCap or Binance)
-- Display live prices for a configurable list of assets
-- Define alert rules:
-  - Price threshold: "notify when BTC > $100,000"
-  - Price floor: "notify when SOL < $130"
-  - Price range: "notify when ETH is between $3,000 and $3,200"
-  - % change: "notify if any asset moves more than 5% in the last hour"
-  - Volume spike: "notify if SOL volume is unusually high"
-- Browser push notifications (Web Notifications API)
-- PWA support: installable, works offline with last known prices cached via Service Worker
+**Features (all implemented):**
+- ✅ Connect to real-time WebSocket feed — CoinCap for prices, Binance for 1m klines (`src/lib/websocket.ts`, `src/lib/binance.ts`), with exponential-backoff reconnection
+- ✅ Display live prices for a configurable list of assets (`MONITORED_ASSETS` in `src/lib/config.ts`)
+- ✅ Alert rules (`src/lib/alerts.ts`, `evaluate()` + `EvalContext`):
+  - ✅ Price threshold (`above`)
+  - ✅ Price floor (`below`)
+  - ✅ Price range (`range`)
+  - ✅ % change /1h (`pctChange`) — backed by a 1h rolling history ring buffer in `src/lib/prices.ts`
+  - ✅ Volume spike /1m (`volumeSpike`) — latest base volume ÷ median of previous ≥ multiplier (see `src/lib/volumes.ts`; requires ≥10 closed candles of warm-up)
+- ✅ Browser push notifications via Web Notifications API (`src/lib/notifications.ts`)
+- ✅ PWA: `static/manifest.json` + `static/sw.js` (stale-while-revalidate shell cache, last price snapshot persisted to `localStorage`, "cached" badge on stale cards)
+- ✅ GitHub Pages auto-deploy from `main` (`.github/workflows/deploy.yml`)
 
 **Why start here:**
 - No exchange account needed
@@ -123,16 +124,22 @@ Adding a new coin = adding one string to the list.
 ### Phase 2 — Technical Indicators
 > The bot calculates indicators from price data and generates trading signals.
 
-**Planned indicators:**
+**Planned indicators (unchanged, still valid):**
 - **SMA / EMA** — Simple and Exponential Moving Averages
 - **RSI** — Relative Strength Index (overbought/oversold)
 - **MACD** — Moving Average Convergence Divergence
 - **Bollinger Bands**
 
-**Features:**
+**Features (unchanged):**
 - Candlestick chart visualization (OHLCV data)
 - Signal overlays on charts
 - Alerts based on indicator conditions (e.g., "notify when RSI < 30 on BTC")
+
+**Phase 1 infrastructure reusable in Phase 2:**
+- `BinanceKlineFeed` in `src/lib/binance.ts` already emits finalized 1m candles with close + volume; extending the payload to full OHLC (fields `o`/`h`/`l` are present in the kline message, currently discarded) is a small change.
+- `src/lib/alerts.ts` uses `EvalContext = { price?, volume? }`; adding `indicators?` as a third field keeps existing rules untouched.
+- Historical backfill (needed to seed indicators on load) will require a REST call to Binance `/api/v3/klines`; no WebSocket changes needed.
+- `Chart.svelte` is the new component to add; `src/lib/indicators.ts` is already reserved in the project layout.
 
 ---
 

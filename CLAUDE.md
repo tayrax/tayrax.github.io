@@ -29,20 +29,40 @@ Guidelines for working on this project. Read `docs/tayrax.md` for the full produ
 tayrax/
 ├── src/
 │   ├── lib/
-│   │   ├── websocket.ts     # WebSocket connection management
-│   │   ├── alerts.ts        # Alert rule definitions and evaluation
-│   │   └── indicators.ts    # Technical indicators (RSI, SMA, etc.)
+│   │   ├── config.ts         # MONITORED_ASSETS, windows, storage keys
+│   │   ├── websocket.ts      # CoinCap price WebSocket (PriceFeed)
+│   │   ├── binance.ts        # Binance 1m kline WebSocket (BinanceKlineFeed)
+│   │   ├── symbols.ts        # CoinCap id ↔ Binance symbol mapping
+│   │   ├── prices.ts         # Price store + 1h rolling history + snapshot cache
+│   │   ├── volumes.ts        # Volume store + volumeSpikeRatio
+│   │   ├── alerts.ts         # Alert rule types, store, evaluate()
+│   │   ├── notifications.ts  # Web Notifications API wrapper
+│   │   └── indicators.ts     # Technical indicators (Phase 2)
 │   ├── components/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
-│   │   └── Chart.svelte
-│   └── App.svelte
-├── public/
-│   └── manifest.json        # PWA manifest
-├── vite.config.ts
-├── docs/tayrax.md           # Product plan and roadmap
-└── CLAUDE.md                # This file
+│   │   ├── AlertList.svelte
+│   │   └── Chart.svelte      # Phase 2
+│   ├── App.svelte
+│   ├── app.css
+│   └── main.ts
+├── static/                   # Vite publicDir — copied to site root at build
+│   ├── manifest.json         # PWA manifest
+│   ├── sw.js                 # Service worker (stale-while-revalidate shell)
+│   ├── tayrax-logo.svg
+│   └── tayrax-logo.png
+├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
+├── index.html
+├── vite.config.ts            # publicDir: 'static', base: '/'
+├── svelte.config.js
+├── tsconfig.json
+├── docs/tayrax.md            # Product plan and roadmap
+└── CLAUDE.md                 # This file
 ```
+
+Note: `static/` is Vite's `publicDir`. All files here are served from the site
+root (`/manifest.json`, `/sw.js`, `/tayrax-logo.svg`). Do not create a separate
+`public/` directory — keep PWA assets and logos together in `static/`.
 
 ---
 
@@ -86,9 +106,21 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - TypeScript strict mode — no `any`, no implicit types
 - Prefer named exports over default exports in `.ts` files
 - Svelte components use `<script lang="ts">`
-- WebSocket connections must handle reconnection automatically
+- WebSocket connections must handle reconnection automatically (exponential backoff, capped at 30s)
 - Keep business logic (alerts, indicators, WebSocket) in `src/lib/`, not inside components
 - One responsibility per file — don't mix WebSocket logic with indicator math
+- Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
+
+---
+
+## Commands
+
+- `npm run dev` — Vite dev server (HMR). Service worker is NOT registered in dev.
+- `npm run check` — `svelte-check` over `.ts` and `.svelte` files; must pass with 0 errors.
+- `npm run build` — runs `svelte-check` then `vite build` → `dist/`.
+- `npm run preview` — serve `dist/` locally to test the production bundle + service worker.
+
+Deploy is automated via `.github/workflows/deploy.yml` on push to `main`; the repo's Pages source must be set to "GitHub Actions".
 
 ---
 
