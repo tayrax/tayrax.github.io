@@ -4,8 +4,11 @@ ca-certificates
 media-types
 less
 wget
+curl
 make
 python3
 shellcheck
 git
 npm
+jq
+procps
