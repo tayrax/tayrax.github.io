@@ -1,8 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm create:*)",
-      "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(make ci-check:*)",
       "Bash(npm ls:*)",
