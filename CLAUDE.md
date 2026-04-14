@@ -92,6 +92,12 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 
 ---
 
+## Maintaining CLAUDE.md
+
+Keep this file up to date. Whenever you make a change that affects project structure, tooling, conventions, or environment setup, update the relevant section. If no section fits, add one.
+
+---
+
 ## What to Avoid
 
 - Do not add a backend or server — this is a pure client-side app
