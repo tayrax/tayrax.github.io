@@ -13,6 +13,11 @@ ci-check: check
 	@npm run check
 	@npm run test
 
+.PHONY: test
+test:
+	@npm run check
+	@npm run test
+
 .PHONY: clean
 clean:
 	@rm -rf __pycache__ dist .vite *.log
