@@ -3,7 +3,7 @@ FROM debian:forky-20260406-slim
 LABEL maintainer="Jeremías Casteglione <jrmsdev@gmail.com>"
 LABEL version="260414"
 
-ENV CLVQ_UPGRADE=260414
+ENV TAYRAX_UPGRADE=260414
 
 USER root:root
 WORKDIR /root
@@ -41,7 +41,8 @@ RUN printf 'umask %s\n' '027' >>/home/devel/.profile
 COPY ./user-login.sh /usr/local/bin/user-login.sh
 RUN chmod -v 0755 /usr/local/bin/user-login.sh
 
-RUN install -v -m 0750 -o devel -g devel -d /opt/tayrax
+RUN install -v -m 0750 -o devel -g devel -d /opt/tayrax \
+	&& install -v -m 0750 -o devel -g devel -d /opt/tayrax/site
 
 RUN ln -vsf /home/devel/.local/npm/node_modules/.bin/claude /usr/local/bin/claude
 
@@ -54,12 +55,11 @@ ENV HOME=/home/devel
 RUN npm version
 RUN npx --version
 
-ENV CLVQ_CLAUDE_UPGRADE=2.1.107
+ENV TAYRAX_CLAUDE_UPGRADE=2.1.107
 
 RUN install -v -d -m 0750 ${HOME}/.local/npm \
 	&& cd ${HOME}/.local/npm \
 	&& npm install @anthropic-ai/claude-code
 RUN /usr/local/bin/claude --version
 
-ENV CLVQ_ROOT=http://localhost:8000
 ENTRYPOINT ["/usr/local/bin/user-login.sh"]

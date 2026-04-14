@@ -11,6 +11,6 @@ exec docker run -it --rm -u devel \
 	-e "TERM=${TERM}" \
 	-v "${datadir}/claude:/home/devel/.claude" \
 	-v "${datadir}/claude.json:/home/devel/.claude.json" \
-	-v "${PWD}:/opt/tayrax" \
-	--workdir /opt/tayrax \
+	-v "${PWD}:/opt/tayrax/site" \
+	--workdir /opt/tayrax/site \
 	tayrax/site
