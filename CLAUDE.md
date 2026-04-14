@@ -43,6 +43,8 @@ tayrax/
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
 │   │   └── Chart.svelte      # Phase 2
+│   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
+│   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
 │   ├── app.css
 │   └── main.ts
@@ -54,6 +56,7 @@ tayrax/
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
 ├── index.html
 ├── vite.config.ts            # publicDir: 'static', base: '/'
+├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
 ├── tsconfig.json
 ├── docs/tayrax.md            # Product plan and roadmap
@@ -112,7 +115,7 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - WebSocket connections must handle reconnection automatically (exponential backoff, capped at 30s)
 - Keep business logic (alerts, indicators, WebSocket) in `src/lib/`, not inside components
 - One responsibility per file — don't mix WebSocket logic with indicator math
-- Unit tests live alongside source files as `*.test.ts` (e.g. `src/lib/volumes.test.ts`). Test framework is Vitest with a `jsdom` environment.
+- Unit tests and component tests live alongside source files as `*.test.ts`. Framework: Vitest v2 (jsdom) for lib tests; `@testing-library/svelte` for component tests. Global setup in `src/test-setup.ts`; jest-dom type augmentation in `src/vitest-matchers.d.ts`.
 - Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
 
 ---
@@ -126,7 +129,7 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - `npm test` — run the Vitest unit test suite once (CI mode, no watch).
 - `npm run test:watch` — run Vitest in watch mode during development.
 - `make check` — shell/python lint of repo-level scripts (shellcheck on `docker/*.sh`, `py_compile` on `upgrade.py`).
-- `make ci-check` — what CI runs: `make check` + `npm ci` + `npm run check` + `npm run build`. Run this locally before opening a PR if you want to mirror CI exactly.
+- `make ci-check` — what CI runs: `make check` + `npm ci` + `npm run check` + `npm run test` + `npm run build`. Run this locally before opening a PR if you want to mirror CI exactly.
 
 ## CI / Release
 
@@ -166,3 +169,4 @@ Keep this file up to date. Whenever you make a change that affects project struc
 - Do not store sensitive data (API keys, secrets) in localStorage without encryption — flag it and ask
 - Do not jump ahead to a later phase feature without finishing the current phase
 - Do not add dependencies without a clear reason — keep the bundle lean
+- Do not upgrade Vitest beyond v2.x — Vitest v3+ bundles its own Vite 6+, which conflicts with `@sveltejs/vite-plugin-svelte@3` (Svelte 4 / Vite 5) and produces deprecation warnings. Upgrade Vitest only when Svelte and Vite are also being upgraded.
