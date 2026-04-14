@@ -47,8 +47,10 @@ tayrax/
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
+│   ├── System.svelte         # /system.html diagnostic page (browser caps + WS tests)
 │   ├── app.css
-│   └── main.ts
+│   ├── main.ts
+│   └── system.ts             # Entry point for system.html
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
@@ -56,7 +58,8 @@ tayrax/
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
 ├── index.html
-├── vite.config.ts            # publicDir: 'static', base: '/'
+├── system.html               # Diagnostic page entry (multi-page Vite app)
+├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for both pages
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
 ├── tsconfig.json
@@ -168,10 +171,24 @@ Both must stay in sync. When you add, change, or remove a documented behavior, u
 
 ---
 
+## Multi-page app
+
+The build has two entry points defined in `vite.config.ts` via `rollupOptions.input`:
+
+| Entry | URL | Purpose |
+|---|---|---|
+| `index.html` | `/` | Main trading dashboard (PWA) |
+| `system.html` | `/system.html` | Diagnostic page: browser capabilities + live WebSocket tests |
+
+Both pages share `src/app.css`. The system page is entirely self-contained in `src/System.svelte` + `src/system.ts` — it does not import from the main app's store or feed classes. When adding a new top-level page, add its HTML file at the project root and register it in `vite.config.ts`.
+
+---
+
 ## Known Behaviors
 
 - **Volume-spike alerts** require ≥10 closed 1m candles (~10 minutes of uptime) before they can fire. Baseline is the median of prior closed-candle base volumes from the Binance kline stream. Don't "fix" the warm-up by lowering the sample threshold — it exists to avoid false positives from a cold history.
 - **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
+- **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts` and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
 
 ---
 
