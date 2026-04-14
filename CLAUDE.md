@@ -29,8 +29,10 @@ Guidelines for working on this project. Read `docs/tayrax.md` for the full produ
 tayrax/
 ├── src/
 │   ├── lib/
-│   │   ├── config.ts         # MONITORED_ASSETS, windows, storage keys
-│   │   ├── websocket.ts      # CoinCap price WebSocket (PriceFeed)
+│   │   ├── config.ts         # MONITORED_ASSETS, PRICE_PROVIDER, windows, storage keys
+│   │   ├── provider.ts       # PriceProvider interface + shared types (PriceTick, etc.)
+│   │   ├── websocket.ts      # CoinCap price WebSocket (PriceFeed implements PriceProvider)
+│   │   ├── binance-price.ts  # Binance miniTicker price WebSocket (BinancePriceFeed)
 │   │   ├── binance.ts        # Binance 1m kline WebSocket (BinanceKlineFeed)
 │   │   ├── symbols.ts        # CoinCap id ↔ Binance symbol mapping
 │   │   ├── prices.ts         # Price store + 1h rolling history + snapshot cache
@@ -105,6 +107,25 @@ Monitored assets are defined as a single configurable list. No per-coin implemen
 ```typescript
 const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 ```
+
+---
+
+## Price Provider
+
+The live price WebSocket source is selected by `PRICE_PROVIDER` in `config.ts`:
+
+```typescript
+export const PRICE_PROVIDER: 'coincap' | 'binance' = 'binance';
+```
+
+| Value | Class | Stream |
+|---|---|---|
+| `'binance'` | `BinancePriceFeed` (`binance-price.ts`) | `wss://stream.binance.com:9443/stream?streams=...@miniTicker` |
+| `'coincap'` | `PriceFeed` (`websocket.ts`) | `wss://ws.coincap.io/prices?assets=...` |
+
+`App.svelte` calls `createPriceFeed()` at startup, which reads `PRICE_PROVIDER` and instantiates the right class. Both implement the `PriceProvider` interface (`provider.ts`). To add a new provider, implement `PriceProvider`, add it to the union type in `config.ts`, and add a branch in `createPriceFeed()`.
+
+CoinCap API key support is planned for a future version — do not implement it yet.
 
 ---
 
@@ -188,7 +209,7 @@ Both pages share `src/app.css`. The system page is entirely self-contained in `s
 
 - **Volume-spike alerts** require ≥10 closed 1m candles (~10 minutes of uptime) before they can fire. Baseline is the median of prior closed-candle base volumes from the Binance kline stream. Don't "fix" the warm-up by lowering the sample threshold — it exists to avoid false positives from a cold history.
 - **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
-- **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts` and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
+- **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts`, `binance-price.ts`, and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
 
 ---
 

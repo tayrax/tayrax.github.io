@@ -5,8 +5,10 @@
   import PriceCard from './components/PriceCard.svelte';
   import AlertForm from './components/AlertForm.svelte';
   import AlertList from './components/AlertList.svelte';
-  import { MONITORED_ASSETS } from './lib/config';
-  import { PriceFeed, type PriceFeedStatus } from './lib/websocket';
+  import { MONITORED_ASSETS, PRICE_PROVIDER } from './lib/config';
+  import type { PriceFeedStatus, PriceProvider } from './lib/provider';
+  import { PriceFeed } from './lib/websocket';
+  import { BinancePriceFeed } from './lib/binance-price';
   import { BinanceKlineFeed } from './lib/binance';
   import { applyTick, prices } from './lib/prices';
   import { applyCandle, volumes } from './lib/volumes';
@@ -21,7 +23,12 @@
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
 
-  const feed = new PriceFeed({ assets: MONITORED_ASSETS });
+  function createPriceFeed(): PriceProvider {
+    if (PRICE_PROVIDER === 'binance') return new BinancePriceFeed(MONITORED_ASSETS);
+    return new PriceFeed({ assets: MONITORED_ASSETS });
+  }
+
+  const feed: PriceProvider = createPriceFeed();
   const klineFeed = new BinanceKlineFeed(MONITORED_ASSETS);
 
   const unsubStatus = feed.onStatus((s) => (status = s));
@@ -113,7 +120,7 @@
     <h2>How it works</h2>
     <dl>
       <dt>Price updates</dt>
-      <dd>Prices are streamed live from CoinCap's WebSocket feed and refreshed at most every 5 seconds per asset. The displayed price may lag up to 5 seconds behind the live market.</dd>
+      <dd>Prices are streamed live from {PRICE_PROVIDER === 'binance' ? "Binance's miniTicker" : "CoinCap's"} WebSocket feed and refreshed at most every 5 seconds per asset. The displayed price may lag up to 5 seconds behind the live market.</dd>
       <dt>Volume updates</dt>
       <dd>Volume data comes from Binance's 1-minute kline stream and updates once per minute, on closed-candle events.</dd>
       <dt>Cached badge</dt>

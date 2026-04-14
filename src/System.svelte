@@ -26,7 +26,8 @@
   const SETTLE_AFTER_MSG_MS = 3_000;
 
   const COINCAP_URL = 'wss://ws.coincap.io/prices?assets=bitcoin';
-  const BINANCE_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@kline_1m';
+  const BINANCE_TICKER_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@miniTicker';
+  const BINANCE_KLINE_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@kline_1m';
 
   const makeIdle = (): WsTestState => ({
     status: 'idle',
@@ -40,7 +41,8 @@
   });
 
   let coincap: WsTestState = makeIdle();
-  let binance: WsTestState = makeIdle();
+  let binanceTicker: WsTestState = makeIdle();
+  let binanceKline: WsTestState = makeIdle();
 
   function runWsTest(url: string, onUpdate: (s: WsTestState) => void): void {
     const state: WsTestState = { ...makeIdle(), status: 'running' };
@@ -95,14 +97,20 @@
     runWsTest(COINCAP_URL, (s) => (coincap = s));
   }
 
-  function testBinance(): void {
-    if (binance.status === 'running') return;
-    runWsTest(BINANCE_URL, (s) => (binance = s));
+  function testBinanceTicker(): void {
+    if (binanceTicker.status === 'running') return;
+    runWsTest(BINANCE_TICKER_URL, (s) => (binanceTicker = s));
+  }
+
+  function testBinanceKline(): void {
+    if (binanceKline.status === 'running') return;
+    runWsTest(BINANCE_KLINE_URL, (s) => (binanceKline = s));
   }
 
   function runAll(): void {
     testCoincap();
-    testBinance();
+    testBinanceTicker();
+    testBinanceKline();
   }
 
   // ---------------------------------------------------------------------------
@@ -236,7 +244,7 @@
     <div class="section-header">
       <h2>WebSocket diagnostics</h2>
       <button type="button" class="btn-run-all" on:click={runAll}
-        disabled={coincap.status === 'running' || binance.status === 'running'}>
+        disabled={coincap.status === 'running' || binanceTicker.status === 'running' || binanceKline.status === 'running'}>
         Run all tests
       </button>
     </div>
@@ -301,43 +309,41 @@
       {/if}
     </div>
 
-    <!-- Binance -->
+    <!-- Binance miniTicker (live prices) -->
     <div class="ws-card">
       <div class="ws-card-header">
         <div>
-          <div class="ws-name">Binance kline stream</div>
-          <code class="ws-url">{BINANCE_URL}</code>
+          <div class="ws-name">Binance miniTicker <span class="ws-role">(live prices)</span></div>
+          <code class="ws-url">{BINANCE_TICKER_URL}</code>
         </div>
         <button
           type="button"
           class="btn-test"
-          on:click={testBinance}
-          disabled={binance.status === 'running'}
+          on:click={testBinanceTicker}
+          disabled={binanceTicker.status === 'running'}
         >
-          {binance.status === 'running' ? 'testing…' : 'Test'}
+          {binanceTicker.status === 'running' ? 'testing…' : 'Test'}
         </button>
       </div>
 
-      {#if binance.status !== 'idle'}
+      {#if binanceTicker.status !== 'idle'}
         <div class="ws-results">
           <div class="result-row">
             <span class="rl">Handshake (101)</span>
-            <span class="badge" class:ok={binance.opened} class:fail={!binance.opened && binance.status === 'done'} class:neutral={!binance.opened && binance.status === 'running'}>
-              {binance.opened ? 'opened' : binance.status === 'running' ? '…' : 'never opened'}
+            <span class="badge" class:ok={binanceTicker.opened} class:fail={!binanceTicker.opened && binanceTicker.status === 'done'} class:neutral={!binanceTicker.opened && binanceTicker.status === 'running'}>
+              {binanceTicker.opened ? 'opened' : binanceTicker.status === 'running' ? '…' : 'never opened'}
             </span>
           </div>
           <div class="result-row">
             <span class="rl">Messages received</span>
-            <span class="val">{binance.messagesReceived}
-              {#if binance.status !== 'done'}<span class="hint-inline">(Binance kline fires once per closed minute candle — may be 0 if no candle closes during the test)</span>{/if}
-            </span>
+            <span class="val">{binanceTicker.messagesReceived}</span>
           </div>
-          {#if binance.status === 'done' && binance.closeCode !== null}
-            {@const info = interpretClose(binance.closeCode, binance.wasOurClose)}
-            {@const oc = testOutcome(binance)}
+          {#if binanceTicker.status === 'done' && binanceTicker.closeCode !== null}
+            {@const info = interpretClose(binanceTicker.closeCode, binanceTicker.wasOurClose)}
+            {@const oc = testOutcome(binanceTicker)}
             <div class="result-row">
               <span class="rl">Close code</span>
-              <span class="val">{binance.closeCode}{binance.closeReason ? ` "${binance.closeReason}"` : ''}</span>
+              <span class="val">{binanceTicker.closeCode}{binanceTicker.closeReason ? ` "${binanceTicker.closeReason}"` : ''}</span>
             </div>
             <div class="result-row">
               <span class="rl">Interpretation</span>
@@ -347,7 +353,66 @@
             </div>
             <div class="result-row">
               <span class="rl">Duration</span>
-              <span class="val">{binance.durationMs} ms</span>
+              <span class="val">{binanceTicker.durationMs} ms</span>
+            </div>
+            <div class="result-row">
+              <span class="rl">Outcome</span>
+              <span class="badge outcome" class:ok={oc === 'pass'} class:warn={oc === 'warn'} class:fail={oc === 'fail'}>
+                {oc === 'pass' ? 'pass — connection works' : oc === 'warn' ? 'warn — connected but no data received in time' : 'fail — connection rejected or dropped'}
+              </span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Binance kline (volume) -->
+    <div class="ws-card">
+      <div class="ws-card-header">
+        <div>
+          <div class="ws-name">Binance kline <span class="ws-role">(volume)</span></div>
+          <code class="ws-url">{BINANCE_KLINE_URL}</code>
+        </div>
+        <button
+          type="button"
+          class="btn-test"
+          on:click={testBinanceKline}
+          disabled={binanceKline.status === 'running'}
+        >
+          {binanceKline.status === 'running' ? 'testing…' : 'Test'}
+        </button>
+      </div>
+
+      {#if binanceKline.status !== 'idle'}
+        <div class="ws-results">
+          <div class="result-row">
+            <span class="rl">Handshake (101)</span>
+            <span class="badge" class:ok={binanceKline.opened} class:fail={!binanceKline.opened && binanceKline.status === 'done'} class:neutral={!binanceKline.opened && binanceKline.status === 'running'}>
+              {binanceKline.opened ? 'opened' : binanceKline.status === 'running' ? '…' : 'never opened'}
+            </span>
+          </div>
+          <div class="result-row">
+            <span class="rl">Messages received</span>
+            <span class="val">{binanceKline.messagesReceived}
+              {#if binanceKline.status !== 'done'}<span class="hint-inline">(fires once per closed minute candle — may be 0 if no candle closes during the test)</span>{/if}
+            </span>
+          </div>
+          {#if binanceKline.status === 'done' && binanceKline.closeCode !== null}
+            {@const info = interpretClose(binanceKline.closeCode, binanceKline.wasOurClose)}
+            {@const oc = testOutcome(binanceKline)}
+            <div class="result-row">
+              <span class="rl">Close code</span>
+              <span class="val">{binanceKline.closeCode}{binanceKline.closeReason ? ` "${binanceKline.closeReason}"` : ''}</span>
+            </div>
+            <div class="result-row">
+              <span class="rl">Interpretation</span>
+              <span class="badge" class:ok={info.severity === 'pass'} class:warn={info.severity === 'warn'} class:fail={info.severity === 'fail'}>
+                {info.label}
+              </span>
+            </div>
+            <div class="result-row">
+              <span class="rl">Duration</span>
+              <span class="val">{binanceKline.durationMs} ms</span>
             </div>
             <div class="result-row">
               <span class="rl">Outcome</span>
@@ -517,6 +582,7 @@
     border-bottom: 1px solid #1e1e1e;
   }
   .ws-name { font-size: 0.88rem; color: #ccc; font-weight: 600; margin-bottom: 0.2rem; }
+  .ws-role { font-weight: 400; color: #555; font-size: 0.8rem; }
   .ws-url  { font-size: 0.72rem; color: #555; word-break: break-all; }
 
   .ws-results {

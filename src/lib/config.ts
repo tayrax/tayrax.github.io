@@ -5,6 +5,8 @@ export const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'] as 
 
 export type AssetId = (typeof MONITORED_ASSETS)[number];
 
+export const PRICE_PROVIDER: 'coincap' | 'binance' = 'binance';
+
 export const PRICE_HISTORY_WINDOW_MS = 60 * 60 * 1000;
 
 export const PRICE_TICK_MIN_INTERVAL_MS = 5_000;

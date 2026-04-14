@@ -1,20 +1,21 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-export type { PriceTick, PriceFeedListener, PriceFeedStatus, StatusListener } from './provider';
 import type { PriceFeedListener, PriceFeedStatus, StatusListener, PriceProvider } from './provider';
+import { toBinanceSymbol, fromBinanceSymbol } from './symbols';
 
-type Options = {
-  assets: readonly string[];
-  url?: (assets: readonly string[]) => string;
+type MiniTickerPayload = {
+  e: '24hrMiniTicker';
+  E: number;
+  s: string;
+  c: string;
 };
 
-const defaultUrl = (assets: readonly string[]): string =>
-  `wss://ws.coincap.io/prices?assets=${assets.join(',')}`;
+type CombinedMessage = { stream: string; data: MiniTickerPayload };
 
 const STABLE_CONNECTION_MS = 10_000;
 
-export class PriceFeed implements PriceProvider {
+export class BinancePriceFeed implements PriceProvider {
   private ws: WebSocket | null = null;
   private listeners = new Set<PriceFeedListener>();
   private statusListeners = new Set<StatusListener>();
@@ -24,7 +25,7 @@ export class PriceFeed implements PriceProvider {
   private status: PriceFeedStatus = 'idle';
   private connectedAt: number | null = null;
 
-  constructor(private opts: Options) {}
+  constructor(private assets: readonly string[]) {}
 
   start(): void {
     this.stopped = false;
@@ -61,8 +62,12 @@ export class PriceFeed implements PriceProvider {
 
   private connect(): void {
     if (this.stopped) return;
-    const buildUrl = this.opts.url ?? defaultUrl;
-    const url = buildUrl(this.opts.assets);
+    const streams = this.assets
+      .map((a) => toBinanceSymbol(a))
+      .filter((s): s is string => s !== null)
+      .map((s) => `${s.toLowerCase()}@miniTicker`);
+    if (streams.length === 0) return;
+    const url = `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
     this.setStatus('connecting');
     const ws = new WebSocket(url);
     this.ws = ws;
@@ -72,18 +77,20 @@ export class PriceFeed implements PriceProvider {
       this.setStatus('open');
     };
     ws.onmessage = (ev: MessageEvent<string>) => {
-      let data: Record<string, string>;
+      let msg: CombinedMessage;
       try {
-        data = JSON.parse(ev.data) as Record<string, string>;
+        msg = JSON.parse(ev.data) as CombinedMessage;
       } catch {
         return;
       }
-      const now = Date.now();
-      for (const [asset, priceStr] of Object.entries(data)) {
-        const price = Number(priceStr);
-        if (!Number.isFinite(price)) continue;
-        for (const fn of this.listeners) fn({ asset, price, receivedAt: now });
-      }
+      const d = msg.data;
+      if (!d || d.e !== '24hrMiniTicker') return;
+      const asset = fromBinanceSymbol(d.s);
+      if (!asset) return;
+      const price = Number(d.c);
+      if (!Number.isFinite(price)) return;
+      const receivedAt = Date.now();
+      for (const fn of this.listeners) fn({ asset, price, receivedAt });
     };
     ws.onerror = () => {
       ws.close();
@@ -96,17 +103,13 @@ export class PriceFeed implements PriceProvider {
       this.setStatus('closed');
       if (this.stopped) return;
       if (wasStable) this.reconnectAttempts = 0;
-      this.scheduleReconnect();
+      const delay = Math.min(30_000, 500 * 2 ** this.reconnectAttempts);
+      this.reconnectAttempts += 1;
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        this.connect();
+      }, delay);
     };
-  }
-
-  private scheduleReconnect(): void {
-    const delay = Math.min(30_000, 500 * 2 ** this.reconnectAttempts);
-    this.reconnectAttempts += 1;
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      this.connect();
-    }, delay);
   }
 
   private setStatus(next: PriceFeedStatus): void {
