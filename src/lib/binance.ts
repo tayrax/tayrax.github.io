@@ -29,12 +29,15 @@ type KlinePayload = {
 
 type CombinedMessage = { stream: string; data: KlinePayload };
 
+const STABLE_CONNECTION_MS = 10_000;
+
 export class BinanceKlineFeed {
   private ws: WebSocket | null = null;
   private listeners = new Set<CandleListener>();
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
+  private connectedAt: number | null = null;
 
   constructor(private assets: readonly string[], private interval: string = '1m') {}
 
@@ -76,7 +79,7 @@ export class BinanceKlineFeed {
     this.ws = ws;
 
     ws.onopen = () => {
-      this.reconnectAttempts = 0;
+      this.connectedAt = Date.now();
     };
     ws.onmessage = (ev: MessageEvent<string>) => {
       let msg: CombinedMessage;
@@ -105,8 +108,12 @@ export class BinanceKlineFeed {
       ws.close();
     };
     ws.onclose = () => {
+      const wasStable =
+        this.connectedAt !== null && Date.now() - this.connectedAt >= STABLE_CONNECTION_MS;
+      this.connectedAt = null;
       this.ws = null;
       if (this.stopped) return;
+      if (wasStable) this.reconnectAttempts = 0;
       const delay = Math.min(30_000, 500 * 2 ** this.reconnectAttempts);
       this.reconnectAttempts += 1;
       this.reconnectTimer = setTimeout(() => {

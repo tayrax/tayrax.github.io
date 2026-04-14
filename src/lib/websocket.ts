@@ -17,6 +17,8 @@ type Options = {
 const defaultUrl = (assets: readonly string[]): string =>
   `wss://ws.coincap.io/prices?assets=${assets.join(',')}`;
 
+const STABLE_CONNECTION_MS = 10_000;
+
 export class PriceFeed {
   private ws: WebSocket | null = null;
   private listeners = new Set<PriceFeedListener>();
@@ -25,6 +27,7 @@ export class PriceFeed {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
   private status: PriceFeedStatus = 'idle';
+  private connectedAt: number | null = null;
 
   constructor(private opts: Options) {}
 
@@ -70,7 +73,7 @@ export class PriceFeed {
     this.ws = ws;
 
     ws.onopen = () => {
-      this.reconnectAttempts = 0;
+      this.connectedAt = Date.now();
       this.setStatus('open');
     };
     ws.onmessage = (ev: MessageEvent<string>) => {
@@ -91,9 +94,13 @@ export class PriceFeed {
       ws.close();
     };
     ws.onclose = () => {
+      const wasStable =
+        this.connectedAt !== null && Date.now() - this.connectedAt >= STABLE_CONNECTION_MS;
+      this.connectedAt = null;
       this.ws = null;
       this.setStatus('closed');
       if (this.stopped) return;
+      if (wasStable) this.reconnectAttempts = 0;
       this.scheduleReconnect();
     };
   }
