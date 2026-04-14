@@ -48,9 +48,6 @@
     }
   };
 
-  const unsubPriceEval = prices.subscribe(() => runEvaluation());
-  const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
-
   let currentAlertsCache: typeof $alerts = [];
   const unsubAlertsCache = alerts.subscribe((a) => (currentAlertsCache = a));
   function getAlertsSnapshot(): typeof $alerts {
@@ -68,6 +65,9 @@
   function getVolumesSnapshot(): typeof $volumes {
     return currentVolumesCache;
   }
+
+  const unsubPriceEval = prices.subscribe(() => runEvaluation());
+  const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
 
   const handlePermission = async (): Promise<void> => {
     permission = await requestPermission();

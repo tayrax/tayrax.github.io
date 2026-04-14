@@ -43,6 +43,7 @@ tayrax/
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
 │   │   └── Chart.svelte      # Phase 2
+│   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
@@ -116,6 +117,7 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - Keep business logic (alerts, indicators, WebSocket) in `src/lib/`, not inside components
 - One responsibility per file — don't mix WebSocket logic with indicator math
 - Unit tests and component tests live alongside source files as `*.test.ts`. Framework: Vitest v2 (jsdom) for lib tests; `@testing-library/svelte` for component tests. Global setup in `src/test-setup.ts`; jest-dom type augmentation in `src/vitest-matchers.d.ts`.
+- jsdom has no `WebSocket`. Any test that renders `App.svelte` (or any component that calls `new WebSocket`) must stub it with `vi.stubGlobal('WebSocket', MockWebSocket)` in `beforeAll` and restore with `vi.unstubAllGlobals()` in `afterAll`. See `src/App.test.ts` for the reference implementation.
 - Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
 
 ---
