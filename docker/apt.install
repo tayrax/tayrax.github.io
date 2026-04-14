@@ -1,0 +1,11 @@
+bash
+openssl
+ca-certificates
+media-types
+less
+wget
+make
+python3
+shellcheck
+git
+npm
