@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import { writable, type Readable } from 'svelte/store';
 
 const MAX_SAMPLES = 20;

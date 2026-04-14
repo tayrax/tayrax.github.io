@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 export type PriceTick = { asset: string; price: number; receivedAt: number };
 
 export type PriceFeedListener = (tick: PriceTick) => void;

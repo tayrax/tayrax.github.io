@@ -1,3 +1,5 @@
+<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
+<!-- See LICENSE file. -->
 <script lang="ts">
   import { MONITORED_ASSETS } from '../lib/config';
   import { addAlert, type AlertKind } from '../lib/alerts';

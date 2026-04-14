@@ -1,3 +1,5 @@
+<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
+<!-- See LICENSE file. -->
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import type { PriceState } from '../lib/prices';

@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import { writable, type Readable } from 'svelte/store';
 import { ALERT_COOLDOWN_MS, STORAGE_KEYS } from './config';
 import { pctChangeOverWindow, type PriceState } from './prices';

@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import './app.css';
 import App from './App.svelte';
 

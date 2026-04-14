@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 export const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'] as const;
 
 export type AssetId = (typeof MONITORED_ASSETS)[number];

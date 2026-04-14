@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
 export const currentPermission = (): NotificationPermissionState => {

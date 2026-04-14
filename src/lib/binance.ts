@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import { toBinanceSymbol, fromBinanceSymbol } from './symbols';
 
 export type ClosedCandle = {

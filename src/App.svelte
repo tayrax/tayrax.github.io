@@ -1,3 +1,5 @@
+<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
+<!-- See LICENSE file. -->
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import PriceCard from './components/PriceCard.svelte';

@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 export const BINANCE_SYMBOL: Record<string, string> = {
   bitcoin: 'BTCUSDT',
   ethereum: 'ETHUSDT',

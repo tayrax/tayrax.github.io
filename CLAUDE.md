@@ -103,6 +103,9 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 
 ## Coding Conventions
 
+- Every source file must begin with the copyright header:
+  - `.ts` files: `// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>` / `// See LICENSE file.`
+  - `.svelte` files: `<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->` / `<!-- See LICENSE file. -->`
 - TypeScript strict mode — no `any`, no implicit types
 - Prefer named exports over default exports in `.ts` files
 - Svelte components use `<script lang="ts">`

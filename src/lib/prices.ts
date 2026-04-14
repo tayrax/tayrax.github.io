@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import { writable, type Readable } from 'svelte/store';
 import { PRICE_HISTORY_WINDOW_MS, STORAGE_KEYS } from './config';
 

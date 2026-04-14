@@ -1,3 +1,5 @@
+<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
+<!-- See LICENSE file. -->
 <script lang="ts">
   import { alerts, removeAlert, type StoredAlert } from '../lib/alerts';
 
