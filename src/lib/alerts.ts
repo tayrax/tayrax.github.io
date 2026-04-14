@@ -1,12 +1,14 @@
 import { writable, type Readable } from 'svelte/store';
 import { ALERT_COOLDOWN_MS, STORAGE_KEYS } from './config';
 import { pctChangeOverWindow, type PriceState } from './prices';
+import { volumeSpikeRatio, type VolumeState } from './volumes';
 
 export type AlertRule =
   | { id: string; asset: string; kind: 'above'; value: number }
   | { id: string; asset: string; kind: 'below'; value: number }
   | { id: string; asset: string; kind: 'range'; low: number; high: number }
-  | { id: string; asset: string; kind: 'pctChange'; value: number };
+  | { id: string; asset: string; kind: 'pctChange'; value: number }
+  | { id: string; asset: string; kind: 'volumeSpike'; multiplier: number };
 
 export type StoredAlert = AlertRule & { lastFiredAt: number | null };
 
@@ -71,37 +73,56 @@ export const markFired = (id: string, at: number): void => {
 
 export type Evaluation = { alert: StoredAlert; message: string };
 
-export const evaluate = (alert: StoredAlert, state: PriceState, now: number): Evaluation | null => {
+export type EvalContext = { price?: PriceState; volume?: VolumeState };
+
+export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Evaluation | null => {
   if (alert.lastFiredAt !== null && now - alert.lastFiredAt < ALERT_COOLDOWN_MS) return null;
 
   const fmt = (n: number): string =>
     n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(4) : n.toPrecision(4);
 
   switch (alert.kind) {
-    case 'above':
-      return state.price > alert.value
-        ? { alert, message: `${alert.asset} is above $${fmt(alert.value)} (now $${fmt(state.price)})` }
+    case 'above': {
+      if (!ctx.price) return null;
+      return ctx.price.price > alert.value
+        ? { alert, message: `${alert.asset} is above $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
         : null;
-    case 'below':
-      return state.price < alert.value
-        ? { alert, message: `${alert.asset} is below $${fmt(alert.value)} (now $${fmt(state.price)})` }
+    }
+    case 'below': {
+      if (!ctx.price) return null;
+      return ctx.price.price < alert.value
+        ? { alert, message: `${alert.asset} is below $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
         : null;
+    }
     case 'range': {
-      const inRange = state.price >= alert.low && state.price <= alert.high;
+      if (!ctx.price) return null;
+      const inRange = ctx.price.price >= alert.low && ctx.price.price <= alert.high;
       return inRange
         ? {
             alert,
-            message: `${alert.asset} is in range $${fmt(alert.low)}–$${fmt(alert.high)} (now $${fmt(state.price)})`
+            message: `${alert.asset} is in range $${fmt(alert.low)}–$${fmt(alert.high)} (now $${fmt(ctx.price.price)})`
           }
         : null;
     }
     case 'pctChange': {
-      const pct = pctChangeOverWindow(state);
+      if (!ctx.price) return null;
+      const pct = pctChangeOverWindow(ctx.price);
       if (pct === null) return null;
       return Math.abs(pct) >= Math.abs(alert.value)
         ? {
             alert,
             message: `${alert.asset} moved ${pct.toFixed(2)}% in the last hour (threshold ${alert.value}%)`
+          }
+        : null;
+    }
+    case 'volumeSpike': {
+      if (!ctx.volume) return null;
+      const ratio = volumeSpikeRatio(ctx.volume);
+      if (ratio === null) return null;
+      return ratio >= alert.multiplier
+        ? {
+            alert,
+            message: `${alert.asset} 1m volume spike: ${ratio.toFixed(2)}× median (threshold ${alert.multiplier}×)`
           }
         : null;
     }

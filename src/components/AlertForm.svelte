@@ -7,12 +7,14 @@
   let value = '';
   let low = '';
   let high = '';
+  let multiplier = '';
   let error = '';
 
   const reset = (): void => {
     value = '';
     low = '';
     high = '';
+    multiplier = '';
     error = '';
   };
 
@@ -26,6 +28,13 @@
         return;
       }
       addAlert({ asset, kind: 'range', low: l, high: h });
+    } else if (kind === 'volumeSpike') {
+      const m = Number(multiplier);
+      if (!Number.isFinite(m) || m <= 1) {
+        error = 'Multiplier must be > 1';
+        return;
+      }
+      addAlert({ asset, kind: 'volumeSpike', multiplier: m });
     } else {
       const v = Number(value);
       if (!Number.isFinite(v)) {
@@ -56,11 +65,17 @@
       <option value="below">price below</option>
       <option value="range">price in range</option>
       <option value="pctChange">% change /1h</option>
+      <option value="volumeSpike">volume spike /1m</option>
     </select>
   </label>
   {#if kind === 'range'}
     <label>Low <input type="number" step="any" bind:value={low} required /></label>
     <label>High <input type="number" step="any" bind:value={high} required /></label>
+  {:else if kind === 'volumeSpike'}
+    <label>
+      Multiplier (×)
+      <input type="number" step="any" min="1" bind:value={multiplier} required />
+    </label>
   {:else}
     <label>
       {kind === 'pctChange' ? '%' : 'Price'}

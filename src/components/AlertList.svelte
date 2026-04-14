@@ -7,6 +7,7 @@
       case 'below': return `${a.asset} < $${a.value}`;
       case 'range': return `${a.asset} in $${a.low}–$${a.high}`;
       case 'pctChange': return `${a.asset} |Δ| ≥ ${a.value}% /1h`;
+      case 'volumeSpike': return `${a.asset} volume ≥ ${a.multiplier}× median /1m`;
     }
   };
 </script>

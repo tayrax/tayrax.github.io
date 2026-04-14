@@ -5,7 +5,9 @@
   import AlertList from './components/AlertList.svelte';
   import { MONITORED_ASSETS } from './lib/config';
   import { PriceFeed, type PriceFeedStatus } from './lib/websocket';
+  import { BinanceKlineFeed } from './lib/binance';
   import { applyTick, prices } from './lib/prices';
+  import { applyCandle, volumes } from './lib/volumes';
   import { alerts, evaluate, markFired } from './lib/alerts';
   import {
     currentPermission,
@@ -18,29 +20,51 @@
   let permission: NotificationPermissionState = currentPermission();
 
   const feed = new PriceFeed({ assets: MONITORED_ASSETS });
+  const klineFeed = new BinanceKlineFeed(MONITORED_ASSETS);
 
   const unsubStatus = feed.onStatus((s) => (status = s));
   const unsubTick = feed.onTick(({ asset, price, receivedAt }) => {
     applyTick(asset, price, receivedAt);
   });
+  const unsubCandle = klineFeed.onCandleClosed(({ asset, baseVolume, closeTime }) => {
+    applyCandle(asset, baseVolume, closeTime);
+  });
 
-  const unsubAlertEval = prices.subscribe((map) => {
+  const runEvaluation = (): void => {
     const now = Date.now();
-    const currentAlerts = getAlertsSnapshot();
-    for (const alert of currentAlerts) {
-      const state = map[alert.asset];
-      if (!state) continue;
-      const hit = evaluate(alert, state, now);
+    const priceMap = getPricesSnapshot();
+    const volumeMap = getVolumesSnapshot();
+    for (const alert of getAlertsSnapshot()) {
+      const hit = evaluate(
+        alert,
+        { price: priceMap[alert.asset], volume: volumeMap[alert.asset] },
+        now
+      );
       if (!hit) continue;
       markFired(alert.id, now);
       notify(`tayrax · ${alert.asset}`, hit.message);
     }
-  });
+  };
+
+  const unsubPriceEval = prices.subscribe(() => runEvaluation());
+  const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
 
   let currentAlertsCache: typeof $alerts = [];
   const unsubAlertsCache = alerts.subscribe((a) => (currentAlertsCache = a));
   function getAlertsSnapshot(): typeof $alerts {
     return currentAlertsCache;
+  }
+
+  let currentPricesCache: typeof $prices = {};
+  const unsubPricesCache = prices.subscribe((p) => (currentPricesCache = p));
+  function getPricesSnapshot(): typeof $prices {
+    return currentPricesCache;
+  }
+
+  let currentVolumesCache: typeof $volumes = {};
+  const unsubVolumesCache = volumes.subscribe((v) => (currentVolumesCache = v));
+  function getVolumesSnapshot(): typeof $volumes {
+    return currentVolumesCache;
   }
 
   const handlePermission = async (): Promise<void> => {
@@ -49,14 +73,20 @@
 
   onMount(() => {
     feed.start();
+    klineFeed.start();
   });
 
   onDestroy(() => {
     unsubStatus();
     unsubTick();
-    unsubAlertEval();
+    unsubCandle();
+    unsubPriceEval();
+    unsubVolumeEval();
     unsubAlertsCache();
+    unsubPricesCache();
+    unsubVolumesCache();
     feed.stop();
+    klineFeed.stop();
   });
 </script>
 
