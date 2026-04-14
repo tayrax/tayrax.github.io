@@ -73,6 +73,8 @@
     permission = await requestPermission();
   };
 
+  let helpOpen = false;
+
   onMount(() => {
     feed.start();
     klineFeed.start();
@@ -97,10 +99,30 @@
     <img src="/tayrax-logo.svg" alt="" width="32" height="32" />
     <h1>tayrax</h1>
   </div>
-  <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
-    {status}
+  <div class="right">
+    <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
+      {status}
+    </div>
+    <button class="help-btn" type="button" aria-label="Help" aria-expanded={helpOpen}
+      on:click={() => (helpOpen = !helpOpen)}>?</button>
   </div>
 </header>
+
+{#if helpOpen}
+  <div class="help">
+    <h2>How it works</h2>
+    <dl>
+      <dt>Price updates</dt>
+      <dd>Prices are streamed live from CoinCap's WebSocket feed and refreshed at most every 5 seconds per asset. The displayed price may lag up to 5 seconds behind the live market.</dd>
+      <dt>Volume updates</dt>
+      <dd>Volume data comes from Binance's 1-minute kline stream and updates once per minute, on closed-candle events.</dd>
+      <dt>Cached badge</dt>
+      <dd>A <em>cached</em> label appears on a price card when no update has been received for more than 30 seconds, indicating a stale or disconnected feed.</dd>
+      <dt>Volume-spike alerts</dt>
+      <dd>Volume-spike detection requires ≥10 closed 1-minute candles (≈10 minutes of runtime) before a rule can fire. Expect a warm-up period after the app loads.</dd>
+    </dl>
+  </div>
+{/if}
 
 <main>
   {#if permission !== 'granted'}
@@ -141,6 +163,7 @@
   }
   .brand { display: flex; align-items: center; gap: 0.6rem; }
   .brand h1 { font-size: 1.1rem; margin: 0; letter-spacing: 0.04em; }
+  .right { display: flex; align-items: center; gap: 0.6rem; }
   .status {
     font-size: 0.8rem;
     padding: 0.25rem 0.6rem;
@@ -150,6 +173,30 @@
   }
   .status.open { background: #0f2e1d; color: #4ade80; }
   .status.closed { background: #3a1f1f; color: #f87171; }
+  .help-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    border: 1px solid #444;
+    background: #2a2a2a;
+    color: #aaa;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .help-btn:hover { background: #333; color: #fff; }
+  .help {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #222;
+    font-size: 0.9rem;
+  }
+  .help h2 { font-size: 0.85rem; color: #aaa; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em; }
+  .help dl { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .help dt { color: #eee; font-weight: 600; }
+  .help dd { margin: 0; color: #888; line-height: 1.5; }
 
   main {
     max-width: 960px;

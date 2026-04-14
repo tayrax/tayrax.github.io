@@ -157,6 +157,17 @@ Keep this file up to date. Whenever you make a change that affects project struc
 
 ---
 
+## User-facing documentation
+
+Any behavior that affects how the user perceives the app — update frequency, warm-up periods, limitations, badge meanings — must be documented in two places:
+
+1. **`README.md`** — the `## Notes` section, one sub-heading per topic.
+2. **In-app help panel** — the `<dl>` inside the `{#if helpOpen}` block in `App.svelte`.
+
+Both must stay in sync. When you add, change, or remove a documented behavior, update both. Never write to one without checking the other.
+
+---
+
 ## Known Behaviors
 
 - **Volume-spike alerts** require ≥10 closed 1m candles (~10 minutes of uptime) before they can fire. Baseline is the median of prior closed-candle base volumes from the Binance kline stream. Don't "fix" the warm-up by lowering the sample threshold — it exists to avoid false positives from a cold history.
