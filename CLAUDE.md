@@ -103,7 +103,7 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 
 ## Coding Conventions
 
-- Every source file must begin with the copyright header:
+- Every source file must begin with the copyright header, followed by a blank line before the first line of code:
   - `.ts` files: `// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>` / `// See LICENSE file.`
   - `.svelte` files: `<!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->` / `<!-- See LICENSE file. -->`
 - TypeScript strict mode — no `any`, no implicit types
@@ -112,6 +112,7 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - WebSocket connections must handle reconnection automatically (exponential backoff, capped at 30s)
 - Keep business logic (alerts, indicators, WebSocket) in `src/lib/`, not inside components
 - One responsibility per file — don't mix WebSocket logic with indicator math
+- Unit tests live alongside source files as `*.test.ts` (e.g. `src/lib/volumes.test.ts`). Test framework is Vitest with a `jsdom` environment.
 - Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
 
 ---
@@ -122,6 +123,8 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - `npm run check` — `svelte-check` over `.ts` and `.svelte` files; must pass with 0 errors.
 - `npm run build` — runs `svelte-check` then `vite build` → `dist/`.
 - `npm run preview` — serve `dist/` locally to test the production bundle + service worker.
+- `npm test` — run the Vitest unit test suite once (CI mode, no watch).
+- `npm run test:watch` — run Vitest in watch mode during development.
 - `make check` — shell/python lint of repo-level scripts (shellcheck on `docker/*.sh`, `py_compile` on `upgrade.py`).
 - `make ci-check` — what CI runs: `make check` + `npm ci` + `npm run check` + `npm run build`. Run this locally before opening a PR if you want to mirror CI exactly.
 
