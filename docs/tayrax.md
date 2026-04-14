@@ -166,6 +166,19 @@ Adding a new coin = adding one string to the list.
 
 ---
 
+## Testing Strategy
+
+### Unit tests (current)
+Pure functions and Svelte store integration tests live alongside source files as `*.test.ts`. Framework: Vitest + jsdom. Run with `npm test`.
+
+### Component tests (planned — Phase 1 follow-up)
+`@testing-library/svelte` tests for `PriceCard`, `AlertForm`, and `AlertList`. Tests rendering, user interactions, and store-driven updates without mounting the full app.
+
+### E2E tests (future — after Phase 2)
+Full browser automation with [Playwright](https://playwright.dev). When to add: once Phase 2 (charts + indicators) is stable and the feature surface is large enough to justify maintaining a browser test suite. Target scenarios: WebSocket feed connects and prices update, alert fires and notification is shown, PWA installs and works offline. Defer until then — the unit + component layers are sufficient for Phase 1 coverage.
+
+---
+
 ## Notes
 
 - CORS: Binance and CoinCap allow direct browser requests — no proxy needed for public data
