@@ -26,7 +26,7 @@ Guidelines for working on this project. Read `docs/tayrax.md` for the full produ
 ## Project Structure
 
 ```
-trex/
+tayrax/
 ├── src/
 │   ├── lib/
 │   │   ├── websocket.ts     # WebSocket connection management
@@ -40,7 +40,7 @@ trex/
 ├── public/
 │   └── manifest.json        # PWA manifest
 ├── vite.config.ts
-├── trex.md                  # Product plan and roadmap
+├── docs/tayrax.md           # Product plan and roadmap
 └── CLAUDE.md                # This file
 ```
 

@@ -22,7 +22,7 @@ Build a web-based crypto monitoring and trading assistant that:
 - **Language:** TypeScript
 - **App type:** PWA (Progressive Web App)
 - **Framework:** Svelte + Vite (see rationale below)
-- **Hosting:** GitHub Pages (`trex.github.io`)
+- **Hosting:** GitHub Pages (`tayrax.github.io`)
 
 ### Framework Rationale
 
@@ -45,7 +45,7 @@ The goal is a functional, useful UI without unnecessary complexity. Options cons
 ### Project Structure
 
 ```
-trex/
+tayrax/
 ├── src/
 │   ├── lib/
 │   │   ├── websocket.ts     # WebSocket connection (CoinCap / Binance)
