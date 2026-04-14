@@ -119,8 +119,24 @@ const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
 - `npm run check` — `svelte-check` over `.ts` and `.svelte` files; must pass with 0 errors.
 - `npm run build` — runs `svelte-check` then `vite build` → `dist/`.
 - `npm run preview` — serve `dist/` locally to test the production bundle + service worker.
+- `make check` — shell/python lint of repo-level scripts (shellcheck on `docker/*.sh`, `py_compile` on `upgrade.py`).
+- `make ci-check` — what CI runs: `make check` + `npm ci` + `npm run check` + `npm run build`. Run this locally before opening a PR if you want to mirror CI exactly.
 
-Deploy is automated via `.github/workflows/deploy.yml` on push to `main`; the repo's Pages source must be set to "GitHub Actions".
+## CI / Release
+
+Two workflows live in `.github/workflows/`:
+
+- **`check.yml`** — runs `make ci-check` on every push to `main` and on every PR targeting `main`. This is the gate for merges.
+- **`deploy.yml`** — builds and deploys to GitHub Pages. Triggers ONLY on pushes of a tag matching `release/<version>`, where `<version>` is `x.y`, `x.y.z`, or `x.y.z-n` (e.g. `release/0.1`, `release/1.2.3`, `release/1.2.3-4`). A non-matching tag/ref fails in the `validate` job before any build work. `workflow_dispatch` is retained as a manual escape hatch but also runs through `validate`.
+
+Releasing:
+
+```sh
+git tag release/0.1.0
+git push origin release/0.1.0
+```
+
+The repo's Pages source must be set to **Source: GitHub Actions** for the deploy to succeed. Do NOT add a `release/*` branch trigger — releases are tag-driven; branches named `release/*` are not special.
 
 ---
 

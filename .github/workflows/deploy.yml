@@ -1,8 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'release/*'
   workflow_dispatch:
 
 permissions:
@@ -12,10 +13,37 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - name: Parse & validate version
+        id: parse
+        shell: bash
+        run: |
+          ref="${GITHUB_REF}"
+          if [[ "$ref" != refs/tags/release/* ]]; then
+            echo "::error::Workflow must run on a release/<version> tag; got ref '$ref'"
+            exit 1
+          fi
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#release/}"
+          # Accepts: x.y | x.y.z | x.y.z-n  (e.g. 1.2, 1.2.3, 1.2.3-4)
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9]+)?$ ]]; then
+            echo "::error::Invalid version '$version'. Expected x.y, x.y.z, or x.y.z-n"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $version"
+
   build:
+    name: Build
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,15 +51,16 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - name: Run ci-check
+        run: make ci-check
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
-    needs: build
+    name: Deploy ${{ needs.validate.outputs.version }}
+    needs: [validate, build]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
