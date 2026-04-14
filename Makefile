@@ -11,7 +11,6 @@ check:
 ci-check: check
 	@npm ci
 	@npm run check
-	@npm run build
 	@npm run test
 
 .PHONY: clean
@@ -21,3 +20,7 @@ clean:
 .PHONY: distclean
 distclean: clean
 	@rm -rf node_modules
+
+.PHONY: dist
+dist:
+	@npm run build
