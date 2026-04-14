@@ -1,11 +1,20 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import type { PriceState } from '../lib/prices';
   import { pctChangeOverWindow } from '../lib/prices';
 
   export let asset: string;
   export let state: PriceState | undefined;
 
+  const STALE_AFTER_MS = 30_000;
+
+  let now = Date.now();
+  const tick = setInterval(() => (now = Date.now()), 5_000);
+  onDestroy(() => clearInterval(tick));
+
   $: pct = state ? pctChangeOverWindow(state) : null;
+  $: ageMs = state ? now - state.updatedAt : null;
+  $: stale = ageMs !== null && ageMs > STALE_AFTER_MS;
   $: direction =
     state && state.prevPrice !== null
       ? state.price > state.prevPrice
@@ -17,11 +26,23 @@
 
   const fmt = (n: number): string =>
     n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(4) : n.toPrecision(4);
+
+  const fmtAge = (ms: number): string => {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    return `${h}h ago`;
+  };
 </script>
 
-<article class="card">
+<article class="card" class:stale>
   <header>
     <h2>{asset}</h2>
+    {#if stale && ageMs !== null}
+      <span class="badge">cached · {fmtAge(ageMs)}</span>
+    {/if}
   </header>
   {#if state}
     <div class="price {direction}">${fmt(state.price)}</div>
@@ -47,12 +68,29 @@
     border-radius: 8px;
     padding: 1rem 1.25rem;
   }
+  .card.stale { opacity: 0.7; border-style: dashed; }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
   h2 {
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #aaa;
+  }
+  .badge {
+    font-size: 0.7rem;
+    color: #f59e0b;
+    background: #2a1f0a;
+    border: 1px solid #4a3714;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    white-space: nowrap;
   }
   .price {
     font-size: 1.75rem;
