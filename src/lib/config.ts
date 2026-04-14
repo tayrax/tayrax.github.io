@@ -7,6 +7,8 @@ export type AssetId = (typeof MONITORED_ASSETS)[number];
 
 export const PRICE_HISTORY_WINDOW_MS = 60 * 60 * 1000;
 
+export const PRICE_TICK_MIN_INTERVAL_MS = 5_000;
+
 export const ALERT_COOLDOWN_MS = 5 * 60 * 1000;
 
 export const STORAGE_KEYS = {

@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { get } from 'svelte/store';
 import { prices, applyTick, pctChangeOverWindow, type PriceState } from './prices';
+import { PRICE_TICK_MIN_INTERVAL_MS } from './config';
 
 // ---------------------------------------------------------------------------
 // pctChangeOverWindow
@@ -68,11 +69,33 @@ describe('applyTick', () => {
 
   it('updates price and tracks prevPrice on subsequent ticks', () => {
     const asset = 'test_price_update';
-    applyTick(asset, 100, 1000);
-    applyTick(asset, 110, 2000);
+    applyTick(asset, 100, 0);
+    applyTick(asset, 110, PRICE_TICK_MIN_INTERVAL_MS);
     const state = get(prices)[asset];
     expect(state.price).toBe(110);
     expect(state.prevPrice).toBe(100);
+  });
+
+  it('throttle: drops ticks within PRICE_TICK_MIN_INTERVAL_MS of the last accepted tick', () => {
+    const asset = 'test_price_throttle_drop';
+    applyTick(asset, 100, 0);
+    applyTick(asset, 200, PRICE_TICK_MIN_INTERVAL_MS - 1);
+    const state = get(prices)[asset];
+    expect(state.price).toBe(100);
+  });
+
+  it('throttle: accepts a tick exactly at PRICE_TICK_MIN_INTERVAL_MS after the last', () => {
+    const asset = 'test_price_throttle_accept';
+    applyTick(asset, 100, 0);
+    applyTick(asset, 200, PRICE_TICK_MIN_INTERVAL_MS);
+    const state = get(prices)[asset];
+    expect(state.price).toBe(200);
+  });
+
+  it('throttle: first tick for a new asset is always accepted', () => {
+    const asset = 'test_price_throttle_first';
+    applyTick(asset, 42, 0);
+    expect(get(prices)[asset].price).toBe(42);
   });
 
   it('prunes history points older than the window', () => {
@@ -80,8 +103,9 @@ describe('applyTick', () => {
     const windowMs = 60 * 60 * 1000; // PRICE_HISTORY_WINDOW_MS
     const now = Date.now();
     // Add a point well outside the window
-    applyTick(asset, 1, now - windowMs - 1000);
-    // Add a point inside the window
+    const old = now - windowMs - 1000;
+    applyTick(asset, 1, old);
+    // Add a point inside the window — gap from old is ~1h, well beyond the throttle interval
     applyTick(asset, 2, now);
     const state = get(prices)[asset];
     // The old point should have been pruned; only the recent one remains

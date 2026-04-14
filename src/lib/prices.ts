@@ -2,7 +2,7 @@
 // See LICENSE file.
 
 import { writable, type Readable } from 'svelte/store';
-import { PRICE_HISTORY_WINDOW_MS, STORAGE_KEYS } from './config';
+import { PRICE_HISTORY_WINDOW_MS, PRICE_TICK_MIN_INTERVAL_MS, STORAGE_KEYS } from './config';
 
 export type PricePoint = { price: number; at: number };
 
@@ -64,7 +64,12 @@ const schedulePersist = (map: PriceMap): void => {
 
 export const prices: Readable<PriceMap> = { subscribe: store.subscribe };
 
+const lastTickAt = new Map<string, number>();
+
 export const applyTick = (asset: string, price: number, at: number): void => {
+  const last = lastTickAt.get(asset);
+  if (last !== undefined && at - last < PRICE_TICK_MIN_INTERVAL_MS) return;
+  lastTickAt.set(asset, at);
   store.update((map) => {
     const existing = map[asset];
     const history = pruneHistory(existing?.history ?? [], at);

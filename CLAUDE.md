@@ -160,6 +160,7 @@ Keep this file up to date. Whenever you make a change that affects project struc
 ## Known Behaviors
 
 - **Volume-spike alerts** require ≥10 closed 1m candles (~10 minutes of uptime) before they can fire. Baseline is the median of prior closed-candle base volumes from the Binance kline stream. Don't "fix" the warm-up by lowering the sample threshold — it exists to avoid false positives from a cold history.
+- **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
 
 ---
 
