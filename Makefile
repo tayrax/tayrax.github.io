@@ -12,6 +12,7 @@ ci-check: check
 	@npm ci
 	@npm run check
 	@npm run build
+	@npm run test
 
 .PHONY: clean
 clean:
