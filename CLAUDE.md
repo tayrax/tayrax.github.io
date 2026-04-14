@@ -59,8 +59,9 @@ tayrax/
 │   ├── tayrax-logo.svg
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
-├── index.html
-├── system.html               # Diagnostic page entry (multi-page Vite app)
+├── html/
+│   ├── index.html            # Main app entry point
+│   └── system.html           # Diagnostic page entry (multi-page Vite app)
 ├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for both pages
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
@@ -201,7 +202,7 @@ The build has two entry points defined in `vite.config.ts` via `rollupOptions.in
 | `index.html` | `/` | Main trading dashboard (PWA) |
 | `system.html` | `/system.html` | Diagnostic page: browser capabilities + live WebSocket tests |
 
-Both pages share `src/app.css`. The system page is entirely self-contained in `src/System.svelte` + `src/system.ts` — it does not import from the main app's store or feed classes. When adding a new top-level page, add its HTML file at the project root and register it in `vite.config.ts`.
+Both pages share `src/app.css`. The system page is entirely self-contained in `src/System.svelte` + `src/system.ts` — it does not import from the main app's store or feed classes. When adding a new top-level page, add its HTML file in `html/` and register it in `vite.config.ts`.
 
 ---
 
