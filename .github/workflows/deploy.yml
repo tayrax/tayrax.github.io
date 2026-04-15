@@ -45,6 +45,8 @@ jobs:
     name: Build
     needs: validate
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
