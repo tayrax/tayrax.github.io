@@ -13,6 +13,7 @@
   import { applyTick, prices } from './lib/prices';
   import { applyCandle, volumes } from './lib/volumes';
   import { alerts, evaluate, markFired } from './lib/alerts';
+  import { logAction } from './lib/logs';
   import {
     currentPermission,
     notify,
@@ -52,6 +53,12 @@
       if (!hit) continue;
       markFired(alert.id, now);
       notify(`tayrax · ${alert.asset}`, hit.message);
+      logAction({
+        kind: 'alertDispatched',
+        asset: alert.asset,
+        message: hit.message,
+        data: { alertId: alert.id, alertKind: alert.kind }
+      });
     }
   };
 

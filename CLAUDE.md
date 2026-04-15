@@ -39,6 +39,7 @@ tayrax/
 │   │   ├── volumes.ts        # Volume store + volumeSpikeRatio
 │   │   ├── alerts.ts         # Alert rule types, store, evaluate()
 │   │   ├── notifications.ts  # Web Notifications API wrapper
+│   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
 │   │   └── indicators.ts     # Technical indicators (Phase 2)
 │   ├── components/
 │   │   ├── PriceCard.svelte
@@ -50,19 +51,21 @@ tayrax/
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
 │   ├── System.svelte         # /system.html diagnostic page (browser caps + WS tests)
+│   ├── Logs.svelte           # /logs.html action-log viewer (reverse-chrono, filter, clear)
 │   ├── app.css
 │   ├── main.ts
-│   └── system.ts             # Entry point for system.html
+│   ├── system.ts             # Entry point for system.html
+│   └── logs.ts               # Entry point for logs.html
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
 │   ├── tayrax-logo.svg
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
-├── html/
-│   ├── index.html            # Main app entry point
-│   └── system.html           # Diagnostic page entry (multi-page Vite app)
-├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for both pages
+├── index.html                # Main app entry point
+├── system.html               # Diagnostic page entry (multi-page Vite app)
+├── logs.html                 # Action-log page entry (multi-page Vite app)
+├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for each page
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
 ├── tsconfig.json
@@ -201,8 +204,20 @@ The build has two entry points defined in `vite.config.ts` via `rollupOptions.in
 |---|---|---|
 | `index.html` | `/` | Main trading dashboard (PWA) |
 | `system.html` | `/system.html` | Diagnostic page: browser capabilities + live WebSocket tests |
+| `logs.html` | `/logs.html` | Action-log viewer: reverse-chrono list of bot actions |
 
-Both pages share `src/app.css`. The system page is entirely self-contained in `src/System.svelte` + `src/system.ts` — it does not import from the main app's store or feed classes. When adding a new top-level page, add its HTML file in `html/` and register it in `vite.config.ts`.
+All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Neither page is linked from the main app; they are discoverable only by URL. When adding a new top-level page, add its HTML file to the project root (next to `index.html`) and register it in `vite.config.ts`. Page HTML lives at the project root — not in a `html/` subdirectory — so that Vite's default root lets `<script src="/src/…">` references resolve in both dev and build.
+
+---
+
+## Action Logging
+
+Any action the app or bot takes that is meaningful to the user must be recorded via `logAction` in `src/lib/logs.ts`. Current logged action: alert dispatched. Future actions to log as they are implemented include (but are not limited to): trade proposed, trade confirmed, trade executed, trade cancelled, order placed, order filled, signal triggered.
+
+Rules:
+- Call `logAction` at the point where the action is taken, not after the fact.
+- Every new action kind requires a new entry in the `LogKind` union in `src/lib/logs.ts`. The TypeScript compiler will then flag every render site that is missing a case (e.g. `KIND_LABEL` in `Logs.svelte`) — fix all flagged sites before committing.
+- Do not log routine data updates (price ticks, candle closes) — only log discrete decisions or outputs the user would care to audit.
 
 ---
 
@@ -211,6 +226,7 @@ Both pages share `src/app.css`. The system page is entirely self-contained in `s
 - **Volume-spike alerts** require ≥10 closed 1m candles (~10 minutes of uptime) before they can fire. Baseline is the median of prior closed-candle base volumes from the Binance kline stream. Don't "fix" the warm-up by lowering the sample threshold — it exists to avoid false positives from a cold history.
 - **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
 - **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts`, `binance-price.ts`, and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
+- **Action log ring buffer** — `logAction` in `src/lib/logs.ts` caps the stored entry list at `LOG_MAX_ENTRIES` (500, in `config.ts`). New entries are prepended so the store is always reverse-chronological. Persisted under `STORAGE_KEYS.logs` (`tayrax.logs.v1`); open tabs stay in sync via a module-level `storage` event listener. When adding a new action type, extend the `LogKind` union in `logs.ts` — the compiler will then flag every render site that hasn't been updated (e.g. `KIND_LABEL` in `Logs.svelte`).
 
 ---
 
