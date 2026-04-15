@@ -221,24 +221,12 @@
 
   <section class="grid">
     {#each $enabledAssets as asset}
-      <PriceCard {asset} state={$prices[asset]} />
+      <PriceCard {asset} state={$prices[asset]} selected={selectedAsset === asset} on:click={() => (selectedAsset = asset)} />
     {/each}
   </section>
 
   <section class="charts">
-    <div class="charts-header">
-      <h2>Charts</h2>
-      <div class="asset-tabs">
-        {#each $enabledAssets as asset}
-          <button
-            type="button"
-            class="tab"
-            class:active={selectedAsset === asset}
-            on:click={() => (selectedAsset = asset)}
-          >{asset}</button>
-        {/each}
-      </div>
-    </div>
+    <h2>Charts</h2>
     <Chart asset={selectedAsset} />
   </section>
 
@@ -334,27 +322,6 @@
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
   }
-  .charts-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-  }
-  .asset-tabs { display: flex; gap: 0.3rem; }
-  .tab {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    border: 1px solid #333;
-    background: transparent;
-    color: #666;
-    cursor: pointer;
-    font-family: inherit;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .tab:hover { color: #aaa; border-color: #444; }
-  .tab.active { background: #1a1a2e; color: #818cf8; border-color: #3730a3; }
   h2 { font-size: 1rem; margin: 0 0 0.75rem 0; color: #ccc; }
   .list { margin-top: 0.75rem; }
 </style>

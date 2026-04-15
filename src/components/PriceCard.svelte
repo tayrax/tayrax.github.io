@@ -7,6 +7,7 @@
 
   export let asset: string;
   export let state: PriceState | undefined;
+  export let selected = false;
 
   const STALE_AFTER_MS = 30_000;
 
@@ -39,7 +40,7 @@
   };
 </script>
 
-<article class="card" class:stale>
+<button type="button" class="card" class:stale class:selected on:click>
   <header>
     <h2>{asset}</h2>
     {#if stale && ageMs !== null}
@@ -61,7 +62,7 @@
     <div class="price muted">—</div>
     <div class="meta muted">waiting for data</div>
   {/if}
-</article>
+</button>
 
 <style>
   .card {
@@ -69,7 +70,13 @@
     border: 1px solid #2a2a2a;
     border-radius: 8px;
     padding: 1rem 1.25rem;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    width: 100%;
   }
+  .card:hover { border-color: #444; }
+  .card.selected { border-color: #3730a3; background: #1a1a2e; }
   .card.stale { opacity: 0.7; border-style: dashed; }
   header {
     display: flex;

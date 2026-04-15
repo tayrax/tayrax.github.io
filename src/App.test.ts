@@ -82,10 +82,13 @@ describe('App — layout with multiple coins enabled', () => {
     expect(assetHeadings).toHaveLength(2);
   });
 
-  it('renders a chart tab for each enabled asset', () => {
+  it('renders a price card button for each enabled asset', () => {
     const { getAllByRole } = render(App);
-    const tabs = getAllByRole('button').map((b) => b.textContent?.trim() ?? '');
-    expect(tabs).toContain('bitcoin');
-    expect(tabs).toContain('ethereum');
+    const sectionTitles = new Set(['Coins', 'Charts', 'Alerts']);
+    const assetHeadings = getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent ?? '')
+      .filter((t) => !sectionTitles.has(t));
+    expect(assetHeadings).toContain('bitcoin');
+    expect(assetHeadings).toContain('ethereum');
   });
 });
