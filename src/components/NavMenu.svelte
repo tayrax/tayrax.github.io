@@ -11,8 +11,8 @@
 
   const items: { href: string; label: string }[] = [
     { href: '/', label: 'Dashboard' },
-    { href: '/system.html', label: 'System' },
-    { href: '/logs.html', label: 'Logs' },
+    { href: '/system/', label: 'System' },
+    { href: '/logs/', label: 'Logs' },
   ];
 
   function toggle(): void {

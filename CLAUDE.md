@@ -53,12 +53,12 @@ tayrax/
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
-│   ├── System.svelte         # /system.html diagnostic page (browser caps + WS tests)
-│   ├── Logs.svelte           # /logs.html action-log viewer (reverse-chrono, filter, clear)
+│   ├── System.svelte         # /system/ diagnostic page (browser caps + WS tests)
+│   ├── Logs.svelte           # /logs/ action-log viewer (reverse-chrono, filter, clear)
 │   ├── app.css
 │   ├── main.ts
-│   ├── system.ts             # Entry point for system.html
-│   └── logs.ts               # Entry point for logs.html
+│   ├── system.ts             # Entry point for system/index.html
+│   └── logs.ts               # Entry point for logs/index.html
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
@@ -66,8 +66,8 @@ tayrax/
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
 ├── index.html                # Main app entry point
-├── system.html               # Diagnostic page entry (multi-page Vite app)
-├── logs.html                 # Action-log page entry (multi-page Vite app)
+├── system/index.html         # Diagnostic page entry (multi-page Vite app) → /system/
+├── logs/index.html           # Action-log page entry (multi-page Vite app) → /logs/
 ├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for each page
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
@@ -206,10 +206,10 @@ The build has two entry points defined in `vite.config.ts` via `rollupOptions.in
 | Entry | URL | Purpose |
 |---|---|---|
 | `index.html` | `/` | Main trading dashboard (PWA) |
-| `system.html` | `/system.html` | Diagnostic page: browser capabilities + live WebSocket tests |
-| `logs.html` | `/logs.html` | Action-log viewer: reverse-chrono list of bot actions |
+| `system/index.html` | `/system/` | Diagnostic page: browser capabilities + live WebSocket tests |
+| `logs/index.html` | `/logs/` | Action-log viewer: reverse-chrono list of bot actions |
 
-All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Neither page is linked from the main app; they are discoverable only by URL. When adding a new top-level page, add its HTML file to the project root (next to `index.html`) and register it in `vite.config.ts`. Page HTML lives at the project root — not in a `html/` subdirectory — so that Vite's default root lets `<script src="/src/…">` references resolve in both dev and build.
+All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Pages are navigable via the nav menu (NavMenu.svelte). When adding a new page, create its HTML file at `<name>/index.html` (project root level), register it in `vite.config.ts` under `rollupOptions.input`, and add its entry to the nav items in `NavMenu.svelte`. Page HTML files use absolute `/src/…` script paths so they resolve correctly from any subdirectory in both dev and build.
 
 ---
 
