@@ -5,6 +5,6 @@ exec docker run -it --rm -u devel \
 	--hostname tayrax-preview.local \
 	-v "${PWD}:/opt/tayrax/site" \
 	--workdir /opt/tayrax/site \
-	--entrypoint /opt/tayrax/site/docker/run/preview.sh \
+	--entrypoint /opt/tayrax/site/docker/run/httpd.sh \
 	-p 127.0.0.1:1980:1980 \
 	tayrax/site

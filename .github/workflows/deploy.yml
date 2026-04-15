@@ -54,6 +54,8 @@ jobs:
       - name: Make Check
         run: make ci-check
       - name: Make Dist
+        env:
+          TAYRAX_CDN: ${{ vars.TAYRAX_CDN }}
         run: make dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

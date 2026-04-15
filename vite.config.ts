@@ -1,3 +1,6 @@
+// Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
+// See LICENSE file.
+
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
@@ -9,23 +12,29 @@ const now = new Date();
 const pad = (n: number, len = 2): string => String(n).padStart(len, '0');
 const buildStamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
-export default defineConfig(({ mode }) => ({
-  plugins: [svelte({ configFile: resolve(__dirname, 'svelte.config.js') })],
-  define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
-    __APP_BUILD__: JSON.stringify(mode === 'development' ? 'devel' : buildStamp),
-  },
-  publicDir: resolve(__dirname, 'static'),
-  base: '/',
-  build: {
-    outDir: resolve(__dirname, 'dist'),
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        system: resolve(__dirname, 'system/index.html'),
-        logs: resolve(__dirname, 'logs/index.html'),
-        help: resolve(__dirname, 'help/index.html'),
+export default defineConfig(({ mode }) => {
+  const rawCdnUrl = process.env.TAYRAX_CDN ?? (mode === 'development' ? 'http://localhost:5173/' : '/');
+  // Normalise: ensure the URL ends with a trailing slash
+  const cdnUrl = rawCdnUrl.endsWith('/') ? rawCdnUrl : rawCdnUrl + '/';
+
+  return {
+    plugins: [svelte({ configFile: resolve(__dirname, 'svelte.config.js') })],
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+      __APP_BUILD__: JSON.stringify(mode === 'development' ? 'devel' : buildStamp),
+    },
+    publicDir: resolve(__dirname, 'static'),
+    base: cdnUrl,
+    build: {
+      outDir: resolve(__dirname, 'dist'),
+      rollupOptions: {
+        input: {
+          main: resolve(__dirname, 'index.html'),
+          system: resolve(__dirname, 'system/index.html'),
+          logs: resolve(__dirname, 'logs/index.html'),
+          help: resolve(__dirname, 'help/index.html'),
+        },
       },
     },
-  },
-}));
+  };
+});

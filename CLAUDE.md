@@ -71,7 +71,7 @@ tayrax/
 ├── system/index.html         # Diagnostic page entry (multi-page Vite app) → /system/
 ├── logs/index.html           # Action-log page entry (multi-page Vite app) → /logs/
 ├── help/index.html           # Help page entry (multi-page Vite app) → /help/
-├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for each page
+├── vite.config.ts            # publicDir: 'static', base: TAYRAX_CDN env var (falls back to / in prod, localhost:5173 in dev), rollupOptions.input for each page
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
 ├── tsconfig.json
@@ -182,6 +182,8 @@ git push origin release/0.1.0
 ```
 
 The repo's Pages source must be set to **Source: GitHub Actions** for the deploy to succeed. Do NOT add a `release/*` branch trigger — releases are tag-driven; branches named `release/*` are not special.
+
+**CDN split:** The `Make Dist` step passes `TAYRAX_CDN` (read from a GitHub Actions repository variable of the same name) to `vite build` as the `base` URL. When set, all built asset URLs (`<script>`, `<link>`, images) become absolute to that CDN origin while the HTML page files are uploaded to GitHub Pages at their normal paths. If `TAYRAX_CDN` is unset the build falls back to `/` (current behaviour). In dev mode the default is `http://localhost:5173/`. To activate, add a repository variable `TAYRAX_CDN` under **Settings → Secrets and variables → Actions → Variables**.
 
 ---
 
