@@ -9,10 +9,12 @@
   let current = '/';
   let wrapper: HTMLElement;
 
-  const items: { href: string; label: string }[] = [
-    { href: '/', label: 'Dashboard' },
-    { href: '/system/', label: 'System' },
-    { href: '/logs/', label: 'Logs' },
+  const buildParam = `?build=${__APP_BUILD__}`;
+
+  const items: { path: string; label: string }[] = [
+    { path: '/', label: 'Dashboard' },
+    { path: '/system/', label: 'System' },
+    { path: '/logs/', label: 'Logs' },
   ];
 
   function toggle(): void {
@@ -54,8 +56,8 @@
   {#if open}
     <ul class="dropdown" role="menu">
       {#each items as item}
-        <li role="none" class:active={current === item.href}>
-          <a role="menuitem" href={item.href}>{item.label}</a>
+        <li role="none" class:active={current === item.path}>
+          <a role="menuitem" href={item.path + buildParam}>{item.label}</a>
         </li>
       {/each}
     </ul>
