@@ -179,3 +179,36 @@ Full browser automation with [Playwright](https://playwright.dev). When to add: 
 - CoinGecko free tier: 30 req/min without key, 50 req/min with free API key
 - For Phase 3+: exchange API keys must be stored securely (never committed to git)
 - Altcoins = all cryptocurrencies that are not Bitcoin (Ethereum, Solana, Cardano, XRP, DOGE, etc.)
+
+---
+
+## Deferred Ideas
+
+Ideas that came up during development and are worth revisiting, but not prioritized yet.
+
+### Stablecoin de-peg monitoring
+
+Stablecoins (USDT, USDC, DAI) are excluded from `SUPPORTED_ASSETS` because their price is pegged to $1.00, making price cards, candlestick charts, and technical indicators useless for normal operation. However, de-peg events are a real risk signal — USDC briefly dropped to ~$0.87 during the SVB bank collapse in March 2023.
+
+If implemented:
+- Add `usd-coin` (`USDCUSDT`) and `dai` (`DAIUSDT`) to `SUPPORTED_ASSETS` and `BINANCE_SYMBOL`. These are the ones with valid Binance pairs.
+- USDT itself cannot be added: it is the Binance quote currency — no `USDTUSDT` pair exists.
+- The primary alert use case is a simple `below` threshold (e.g. "notify me if USDC drops below $0.98").
+- Charts and indicators on a flat series are not useful; consider suppressing or marking them differently in the UI.
+
+### SUPPORTED_ASSETS maintenance: Binance symbol drift
+
+The `BINANCE_SYMBOL` map in `src/lib/symbols.ts` is a static snapshot. Exchange listings change over time — pairs get delisted, renamed, or added. Current known cases:
+- **XMR** — delisted from Binance in 2024; `XMRUSDT` no longer streams data.
+- **BSV** — delisted from Binance in 2019; would silently produce no data if added.
+- **MATIC → POL** — Polygon rebranded to POL in late 2024. Binance listed `POLUSDT` but `MATICUSDT` remains active. If the old pair is eventually retired, update the symbol (and optionally the CoinCap ID from `polygon` to `pol-ecosystem`).
+
+The app handles stale/missing symbols gracefully: `toBinanceSymbol` returns `null`, the stream filter drops it silently, and the price card shows "waiting for data" indefinitely. No crash, but also no alert that something is wrong. A future improvement would be a diagnostic check in the System page (`/system/`) that flags any `SUPPORTED_ASSETS` entry with no Binance data after a timeout.
+
+### CoinCap ID verification
+
+The CoinCap IDs used as internal asset identifiers (e.g. `toncoin`, `sei-network`, `immutable-x`) were chosen to match CoinCap's slug convention. They are only relevant if `PRICE_PROVIDER` is switched back to `'coincap'` — with Binance the IDs are opaque internal keys and only the `BINANCE_SYMBOL` mapping matters. If CoinCap is re-enabled, each ID should be verified against `https://api.coincap.io/v2/assets/<id>` before use.
+
+### CoinSelector UX at scale
+
+The current `CoinSelector` renders all `SUPPORTED_ASSETS` as a flat flex-wrap checkbox list. At 50 coins this is manageable, but at ~100+ coins a grouped layout (by category: L1, L2, DeFi, etc.) or a searchable/filterable input would significantly improve usability.
