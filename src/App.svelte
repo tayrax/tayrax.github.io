@@ -102,7 +102,6 @@
     permission = await requestPermission();
   };
 
-  let helpOpen = false;
   let selectedAsset: string = MONITORED_ASSETS[0];
 
   onMount(() => {
@@ -135,30 +134,9 @@
     <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
       {status}
     </div>
-    <button class="help-btn" type="button" aria-label="Help" aria-expanded={helpOpen}
-      on:click={() => (helpOpen = !helpOpen)}>?</button>
+    <a class="help-btn" href="/help/" aria-label="Help">?</a>
   </div>
 </header>
-
-{#if helpOpen}
-  <div class="help">
-    <h2>How it works</h2>
-    <dl>
-      <dt>Price updates</dt>
-      <dd>Prices are streamed live from {PRICE_PROVIDER === 'binance' ? "Binance's miniTicker" : "CoinCap's"} WebSocket feed and refreshed at most every 5 seconds per asset. The displayed price may lag up to 5 seconds behind the live market.</dd>
-      <dt>Volume updates</dt>
-      <dd>Volume data comes from Binance's 1-minute kline stream and updates once per minute, on closed-candle events.</dd>
-      <dt>Cached badge</dt>
-      <dd>A <em>cached</em> label appears on a price card when no update has been received for more than 30 seconds, indicating a stale or disconnected feed.</dd>
-      <dt>Volume-spike alerts</dt>
-      <dd>Volume-spike detection requires ≥10 closed 1-minute candles (≈10 minutes of runtime) before a rule can fire. Expect a warm-up period after the app loads.</dd>
-      <dt>Charts and indicators</dt>
-      <dd>On startup, up to 200 recent 1-minute candles are fetched from Binance REST to seed the chart. SMA(20), SMA(50), Bollinger Bands, RSI(14), and MACD(12,26,9) are computed from this history. If the backfill fetch fails, indicators become available as live candles arrive.</dd>
-      <dt>Indicator alerts</dt>
-      <dd>RSI, MACD crossover, and Bollinger Band breakout alerts require at least 26–34 candles of history before they can fire (MACD needs 26 + 9 signal periods). A warm-up period applies if the REST backfill is unavailable.</dd>
-    </dl>
-  </div>
-{/if}
 
 <main>
   {#if permission !== 'granted'}
@@ -227,6 +205,9 @@
   .status.open { background: #0f2e1d; color: #4ade80; }
   .status.closed { background: #3a1f1f; color: #f87171; }
   .help-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 999px;
@@ -234,22 +215,9 @@
     background: #2a2a2a;
     color: #aaa;
     font-size: 0.8rem;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
+    text-decoration: none;
   }
   .help-btn:hover { background: #333; color: #fff; }
-  .help {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #222;
-    font-size: 0.9rem;
-  }
-  .help h2 { font-size: 0.85rem; color: #aaa; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em; }
-  .help dl { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-  .help dt { color: #eee; font-weight: 600; }
-  .help dd { margin: 0; color: #888; line-height: 1.5; }
 
   main {
     max-width: 960px;

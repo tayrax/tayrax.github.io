@@ -55,10 +55,12 @@ tayrax/
 │   ├── App.svelte
 │   ├── System.svelte         # /system/ diagnostic page (browser caps + WS tests)
 │   ├── Logs.svelte           # /logs/ action-log viewer (reverse-chrono, filter, clear)
+│   ├── Help.svelte           # /help/ help page (how it works, warm-up notes)
 │   ├── app.css
 │   ├── main.ts
 │   ├── system.ts             # Entry point for system/index.html
-│   └── logs.ts               # Entry point for logs/index.html
+│   ├── logs.ts               # Entry point for logs/index.html
+│   └── help.ts               # Entry point for help/index.html
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
@@ -68,6 +70,7 @@ tayrax/
 ├── index.html                # Main app entry point
 ├── system/index.html         # Diagnostic page entry (multi-page Vite app) → /system/
 ├── logs/index.html           # Action-log page entry (multi-page Vite app) → /logs/
+├── help/index.html           # Help page entry (multi-page Vite app) → /help/
 ├── vite.config.ts            # publicDir: 'static', base: '/', rollupOptions.input for each page
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
@@ -193,7 +196,7 @@ Keep this file up to date. Whenever you make a change that affects project struc
 Any behavior that affects how the user perceives the app — update frequency, warm-up periods, limitations, badge meanings — must be documented in two places:
 
 1. **`README.md`** — the `## Notes` section, one sub-heading per topic.
-2. **In-app help panel** — the `<dl>` inside the `{#if helpOpen}` block in `App.svelte`.
+2. **Help page** — the `<dl>` inside `src/Help.svelte` (served at `/help/`).
 
 Both must stay in sync. When you add, change, or remove a documented behavior, update both. Never write to one without checking the other.
 
@@ -208,6 +211,7 @@ The build has two entry points defined in `vite.config.ts` via `rollupOptions.in
 | `index.html` | `/` | Main trading dashboard (PWA) |
 | `system/index.html` | `/system/` | Diagnostic page: browser capabilities + live WebSocket tests |
 | `logs/index.html` | `/logs/` | Action-log viewer: reverse-chrono list of bot actions |
+| `help/index.html` | `/help/` | Help page: how it works, warm-up periods, badge meanings |
 
 All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Pages are navigable via the nav menu (NavMenu.svelte). When adding a new page, create its HTML file at `<name>/index.html` (project root level), register it in `vite.config.ts` under `rollupOptions.input`, and add its entry to the nav items in `NavMenu.svelte`. Page HTML files use absolute `/src/…` script paths so they resolve correctly from any subdirectory in both dev and build.
 
