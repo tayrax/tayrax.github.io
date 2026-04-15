@@ -7,14 +7,17 @@
   import AlertList from './components/AlertList.svelte';
   import NavMenu from './components/NavMenu.svelte';
   import Chart from './components/Chart.svelte';
-  import { MONITORED_ASSETS, PRICE_PROVIDER } from './lib/config';
+  import CoinSelector from './components/CoinSelector.svelte';
+  import { MANDATORY_ASSET, PRICE_PROVIDER } from './lib/config';
+  import type { AssetId } from './lib/config';
+  import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
   import type { PriceFeedStatus, PriceProvider } from './lib/provider';
   import { PriceFeed } from './lib/websocket';
   import { BinancePriceFeed } from './lib/binance-price';
   import { BinanceKlineFeed } from './lib/binance';
-  import { applyTick, prices } from './lib/prices';
-  import { applyCandle, volumes } from './lib/volumes';
-  import { applyClosedCandle, candles } from './lib/candles';
+  import { applyTick, prices, pruneAssets } from './lib/prices';
+  import { applyCandle, volumes, pruneVolumes } from './lib/volumes';
+  import { applyClosedCandle, candles, pruneCandles } from './lib/candles';
   import { backfillAll } from './lib/backfill';
   import { computeIndicators } from './lib/indicators';
   import { alerts, evaluate, markFired } from './lib/alerts';
@@ -28,30 +31,56 @@
 
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
+  let showCoinSelector = false;
 
-  function createPriceFeed(): PriceProvider {
-    if (PRICE_PROVIDER === 'binance') return new BinancePriceFeed(MONITORED_ASSETS);
-    return new PriceFeed({ assets: MONITORED_ASSETS });
+  // Track enabled assets — declared early so runEvaluation can reference it safely
+  let mounted = false;
+  let currentEnabledCache: AssetId[] = [];
+
+  // Feed instances — created/recreated when enabled assets change
+  let feed: PriceProvider | null = null;
+  let klineFeed: BinanceKlineFeed | null = null;
+  let unsubFeedStatus: (() => void) | null = null;
+  let unsubFeedTick: (() => void) | null = null;
+  let unsubFeedCandle: (() => void) | null = null;
+
+  function createPriceFeed(assets: readonly AssetId[]): PriceProvider {
+    if (PRICE_PROVIDER === 'binance') return new BinancePriceFeed(assets);
+    return new PriceFeed({ assets });
   }
 
-  const feed: PriceProvider = createPriceFeed();
-  const klineFeed = new BinanceKlineFeed(MONITORED_ASSETS);
+  function startFeeds(assets: readonly AssetId[]): void {
+    // Tear down existing feeds
+    unsubFeedStatus?.();
+    unsubFeedTick?.();
+    unsubFeedCandle?.();
+    feed?.stop();
+    klineFeed?.stop();
 
-  const unsubStatus = feed.onStatus((s) => (status = s));
-  const unsubTick = feed.onTick(({ asset, price, receivedAt }) => {
-    applyTick(asset, price, receivedAt);
-  });
-  const unsubCandle = klineFeed.onCandleClosed((candle) => {
-    applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
-    applyClosedCandle(candle);
-  });
+    feed = createPriceFeed(assets);
+    klineFeed = new BinanceKlineFeed(assets);
+
+    unsubFeedStatus = feed.onStatus((s) => (status = s));
+    unsubFeedTick = feed.onTick(({ asset, price, receivedAt }) => {
+      applyTick(asset, price, receivedAt);
+    });
+    unsubFeedCandle = klineFeed.onCandleClosed((candle) => {
+      applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
+      applyClosedCandle(candle);
+    });
+
+    feed.start();
+    klineFeed.start();
+  }
 
   const runEvaluation = (): void => {
     const now = Date.now();
     const priceMap = getPricesSnapshot();
     const volumeMap = getVolumesSnapshot();
     const candleMap = getCandlesSnapshot();
+    const enabled = new Set(currentEnabledCache);
     for (const alert of getAlertsSnapshot()) {
+      if (!enabled.has(alert.asset as AssetId)) continue;
       const assetCandles = candleMap[alert.asset] ?? [];
       const indicators = assetCandles.length > 0 ? computeIndicators(assetCandles) : undefined;
       const hit = evaluate(
@@ -102,26 +131,50 @@
     permission = await requestPermission();
   };
 
-  let selectedAsset: string = MONITORED_ASSETS[0];
+  let selectedAsset: string = MANDATORY_ASSET;
+
+  const unsubEnabled = enabledAssets.subscribe((enabled) => {
+    if (!mounted) {
+      currentEnabledCache = enabled;
+      return;
+    }
+    const newAssets = enabled.filter((a) => !currentEnabledCache.includes(a));
+    currentEnabledCache = enabled;
+    startFeeds(enabled);
+    if (newAssets.length > 0) void backfillAll(newAssets);
+    if (!enabled.includes(selectedAsset as AssetId)) {
+      selectedAsset = MANDATORY_ASSET;
+    }
+  });
 
   onMount(() => {
-    feed.start();
-    klineFeed.start();
-    backfillAll(MONITORED_ASSETS);
+    // Prune assets that have been disabled beyond the grace period
+    const expired = getExpiredDisabledAssets();
+    if (expired.size > 0) {
+      pruneAssets(expired);
+      pruneCandles(expired);
+      pruneVolumes(expired);
+      clearExpiredDisabledAt(expired);
+    }
+
+    mounted = true;
+    startFeeds(currentEnabledCache);
+    void backfillAll(currentEnabledCache);
   });
 
   onDestroy(() => {
-    unsubStatus();
-    unsubTick();
-    unsubCandle();
+    unsubFeedStatus?.();
+    unsubFeedTick?.();
+    unsubFeedCandle?.();
     unsubPriceEval();
     unsubVolumeEval();
     unsubAlertsCache();
     unsubPricesCache();
     unsubVolumesCache();
     unsubCandlesCache();
-    feed.stop();
-    klineFeed.stop();
+    unsubEnabled();
+    feed?.stop();
+    klineFeed?.stop();
   });
 </script>
 
@@ -151,8 +204,23 @@
     </div>
   {/if}
 
+  <section class="coins-section">
+    <div class="coins-header">
+      <h2>Coins</h2>
+      <button
+        type="button"
+        class="toggle-btn"
+        on:click={() => (showCoinSelector = !showCoinSelector)}
+        aria-expanded={showCoinSelector}
+      >{showCoinSelector ? 'hide' : 'configure'}</button>
+    </div>
+    {#if showCoinSelector}
+      <CoinSelector />
+    {/if}
+  </section>
+
   <section class="grid">
-    {#each MONITORED_ASSETS as asset}
+    {#each $enabledAssets as asset}
       <PriceCard {asset} state={$prices[asset]} />
     {/each}
   </section>
@@ -161,7 +229,7 @@
     <div class="charts-header">
       <h2>Charts</h2>
       <div class="asset-tabs">
-        {#each MONITORED_ASSETS as asset}
+        {#each $enabledAssets as asset}
           <button
             type="button"
             class="tab"
@@ -243,6 +311,24 @@
     cursor: pointer;
     font: inherit;
   }
+  .coins-section { display: flex; flex-direction: column; gap: 0.5rem; }
+  .coins-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .coins-header h2 { margin: 0; }
+  .toggle-btn {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .toggle-btn:hover { color: #aaa; border-color: #444; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

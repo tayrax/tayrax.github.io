@@ -1,12 +1,13 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import AlertForm from './AlertForm.svelte';
 import { alerts } from '../lib/alerts';
-import { MONITORED_ASSETS } from '../lib/config';
+import { MANDATORY_ASSET } from '../lib/config';
+import { toggleAsset } from '../lib/enabled-assets';
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -27,11 +28,11 @@ const fillInput = async (input: HTMLInputElement | null, value: string): Promise
 // rendering
 // ---------------------------------------------------------------------------
 describe('AlertForm — rendering', () => {
-  it('renders an asset select populated with all MONITORED_ASSETS', () => {
+  it('renders an asset select with only the mandatory asset enabled by default', () => {
     const { container } = render(AlertForm);
     const assetSelect = container.querySelectorAll('select')[0] as HTMLSelectElement;
     const options = Array.from(assetSelect.options).map((o) => o.value);
-    expect(options).toEqual(MONITORED_ASSETS);
+    expect(options).toEqual([MANDATORY_ASSET]);
   });
 
   it('shows a single value input for "above" kind (default)', () => {
@@ -152,5 +153,42 @@ describe('AlertForm — validation', () => {
     const before = getAlertCount();
     await fireEvent.click(getByText('Add alert'));
     expect(getAlertCount()).toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// multi-coin asset dropdown
+// ---------------------------------------------------------------------------
+describe('AlertForm — multi-coin dropdown', () => {
+  beforeAll(() => toggleAsset('ethereum'));
+  afterAll(() => toggleAsset('ethereum'));
+
+  it('shows all enabled assets in the dropdown', () => {
+    const { container } = render(AlertForm);
+    const assetSelect = container.querySelectorAll('select')[0] as HTMLSelectElement;
+    const options = Array.from(assetSelect.options).map((o) => o.value);
+    expect(options).toContain(MANDATORY_ASSET);
+    expect(options).toContain('ethereum');
+    expect(options).toHaveLength(2);
+  });
+
+  it('defaults to the mandatory asset even when multiple coins are enabled', () => {
+    const { container } = render(AlertForm);
+    const assetSelect = container.querySelectorAll('select')[0] as HTMLSelectElement;
+    expect(assetSelect.value).toBe(MANDATORY_ASSET);
+  });
+
+  it('can submit an alert for a non-mandatory enabled asset', async () => {
+    const { container, getByText } = render(AlertForm);
+    const assetSelect = container.querySelectorAll('select')[0] as HTMLSelectElement;
+    await fireEvent.change(assetSelect, { target: { value: 'ethereum' } });
+    const input = container.querySelector('input[type="number"]') as HTMLInputElement;
+    await fillInput(input, '3000');
+    const before = getAlertCount();
+    await fireEvent.click(getByText('Add alert'));
+    expect(getAlertCount()).toBe(before + 1);
+    const last = get(alerts).at(-1)!;
+    expect(last.asset).toBe('ethereum');
+    expect(last.kind).toBe('above');
   });
 });

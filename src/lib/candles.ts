@@ -87,6 +87,16 @@ export const applyClosedCandle = (candle: ClosedCandle): void => {
   });
 };
 
+export const pruneCandles = (toRemove: Set<string>): void => {
+  if (toRemove.size === 0) return;
+  store.update((map) => {
+    const next = { ...map };
+    for (const asset of toRemove) delete next[asset];
+    persistCandles(next);
+    return next;
+  });
+};
+
 // Bulk-insert historical candles (older first). Used by backfill on startup.
 // Existing candles with the same openTime are deduplicated; live candles win.
 export const prependCandles = (asset: string, historical: OHLCVCandle[]): void => {

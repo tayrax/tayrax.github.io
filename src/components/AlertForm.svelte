@@ -1,10 +1,12 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { MONITORED_ASSETS } from '../lib/config';
+  import { MANDATORY_ASSET } from '../lib/config';
+  import type { AssetId } from '../lib/config';
+  import { enabledAssets } from '../lib/enabled-assets';
   import { addAlert, type AlertKind } from '../lib/alerts';
 
-  let asset: string = MONITORED_ASSETS[0];
+  let asset: string = MANDATORY_ASSET;
   let kind: AlertKind = 'above';
   let value = '';
   let low = '';
@@ -13,6 +15,11 @@
   let macdDirection: 'bullish' | 'bearish' = 'bullish';
   let bbDirection: 'above' | 'below' = 'above';
   let error = '';
+
+  // If the currently selected asset gets disabled, fall back to the mandatory asset
+  $: if (!$enabledAssets.includes(asset as AssetId)) {
+    asset = MANDATORY_ASSET;
+  }
 
   const reset = (): void => {
     value = '';
@@ -75,7 +82,7 @@
   <label>
     Asset
     <select bind:value={asset}>
-      {#each MONITORED_ASSETS as a}
+      {#each $enabledAssets as a}
         <option value={a}>{a}</option>
       {/each}
     </select>

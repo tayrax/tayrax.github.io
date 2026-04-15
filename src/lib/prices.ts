@@ -88,6 +88,16 @@ export const applyTick = (asset: string, price: number, at: number): void => {
   });
 };
 
+export const pruneAssets = (toRemove: Set<string>): void => {
+  if (toRemove.size === 0) return;
+  store.update((map) => {
+    const next = { ...map };
+    for (const asset of toRemove) delete next[asset];
+    persistSnapshot(next);
+    return next;
+  });
+};
+
 export const pctChangeOverWindow = (state: PriceState): number | null => {
   if (state.history.length < 2) return null;
   const oldest = state.history[0];

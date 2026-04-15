@@ -18,6 +18,15 @@ const store = writable<VolumeMap>({});
 
 export const volumes: Readable<VolumeMap> = { subscribe: store.subscribe };
 
+export const pruneVolumes = (toRemove: Set<string>): void => {
+  if (toRemove.size === 0) return;
+  store.update((map) => {
+    const next = { ...map };
+    for (const asset of toRemove) delete next[asset];
+    return next;
+  });
+};
+
 export const applyCandle = (asset: string, baseVolume: number, at: number): void => {
   store.update((map) => {
     const existing = map[asset];

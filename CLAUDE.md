@@ -29,7 +29,7 @@ Guidelines for working on this project. Read `docs/tayrax.md` for the full produ
 tayrax/
 ├── src/
 │   ├── lib/
-│   │   ├── config.ts         # MONITORED_ASSETS, PRICE_PROVIDER, windows, storage keys
+│   │   ├── config.ts         # SUPPORTED_ASSETS, MANDATORY_ASSET, PRICE_PROVIDER, windows, storage keys
 │   │   ├── provider.ts       # PriceProvider interface + shared types (PriceTick, etc.)
 │   │   ├── websocket.ts      # CoinCap price WebSocket (PriceFeed implements PriceProvider)
 │   │   ├── binance-price.ts  # Binance miniTicker price WebSocket (BinancePriceFeed)
@@ -42,13 +42,15 @@ tayrax/
 │   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
 │   │   ├── backfill.ts       # Binance REST /api/v3/klines historical seed on startup
-│   │   └── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
+│   │   ├── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
+│   │   └── enabled-assets.ts # enabledAssets store (persisted), toggleAsset(), grace-period pruning
 │   ├── components/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
-│   │   ├── NavMenu.svelte    # Clickable logo → dropdown nav (Dashboard / System / Logs)
-│   │   └── Chart.svelte      # SVG candlestick chart with SMA/BB overlays + RSI/MACD sub-pane
+│   │   ├── NavMenu.svelte      # Clickable logo → dropdown nav (Dashboard / System / Logs)
+│   │   ├── CoinSelector.svelte # Checkbox list of SUPPORTED_ASSETS; bitcoin locked; calls toggleAsset
+│   │   └── Chart.svelte        # SVG candlestick chart with SMA/BB overlays + RSI/MACD sub-pane
 │   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
@@ -112,11 +114,17 @@ The project is built incrementally. Do not implement features from a later phase
 
 ## Asset Configuration
 
-Monitored assets are defined as a single configurable list. No per-coin implementation is needed.
+`SUPPORTED_ASSETS` in `config.ts` is the static compile-time registry of all coins the app knows about. It is the source of truth for `CoinSelector` and for `AssetId` typing. Feeds are **not** started for all supported assets — only for the user's enabled set.
 
 ```typescript
-const MONITORED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'];
+export const SUPPORTED_ASSETS = ['bitcoin', 'ethereum', 'solana', 'cardano'] as const;
+export const MANDATORY_ASSET: AssetId = 'bitcoin'; // always tracked, cannot be disabled
+export const DEFAULT_ENABLED_ASSETS: AssetId[] = ['bitcoin']; // default on first load
 ```
+
+`enabledAssets` (`src/lib/enabled-assets.ts`) is a persisted Svelte store holding the user's active coin selection. `toggleAsset(id)` adds or removes a coin (bitcoin is guarded). When a coin is disabled, its `disabledAt` timestamp is written to `STORAGE_KEYS.disabledAt`. On app startup, `getExpiredDisabledAssets()` returns coins disabled for longer than `DISABLED_ASSET_PRUNE_AFTER_MS` (3 days); `pruneAssets` / `pruneCandles` / `pruneVolumes` drop their data; `clearExpiredDisabledAt` cleans up the map. If the user re-enables a coin within the grace period, all persisted history is still intact.
+
+**Feed reconnection:** `App.svelte` subscribes to `enabledAssets` after mount. Each time the set changes, it tears down the existing price and kline feeds and starts new ones with the updated list. Only newly added coins trigger a `backfillAll` call. This means with ~100 supported coins the app only streams data for the handful the user has enabled.
 
 ---
 
@@ -239,6 +247,7 @@ Rules:
 - **Candle history backfill** — On startup `backfillAll` in `src/lib/backfill.ts` fetches up to `CANDLE_HISTORY_MAX` (200) recent 1m candles per asset from the Binance REST API and calls `prependCandles`. This is fire-and-forget: failures are swallowed so a network error or rate-limit doesn't block startup. The candle store is persisted under `STORAGE_KEYS.candles` (`tayrax.candles.v1`). Live candles (from `BinanceKlineFeed`) always win over historical candles when the same `openTime` exists.
 - **Indicator warm-up** — Indicators are null until their minimum candle counts are met: SMA(n) / BB(n) need n candles; RSI(14) needs 15; MACD(12,26,9) needs 34 (26 + 9 − 1). With a successful backfill these are met immediately at load time. Indicator-based alert rules return null (skip) when the required data isn't available yet — they do not fire false positives on insufficient history.
 - **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
+- **Disabled-asset grace period** — When a coin is toggled off, its `disabledAt` timestamp is stored under `STORAGE_KEYS.disabledAt`. Persisted price/candle data is kept for `DISABLED_ASSET_PRUNE_AFTER_MS` (3 days). On the next app startup after that window, `getExpiredDisabledAssets()` identifies expired entries and `pruneAssets` / `pruneCandles` / `pruneVolumes` / `clearExpiredDisabledAt` remove them. Re-enabling within 3 days recovers all history instantly without a new backfill.
 
 ---
 

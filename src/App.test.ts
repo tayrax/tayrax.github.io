@@ -4,7 +4,8 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render } from '@testing-library/svelte';
 import App from './App.svelte';
-import { MONITORED_ASSETS } from './lib/config';
+import { MANDATORY_ASSET } from './lib/config';
+import { toggleAsset } from './lib/enabled-assets';
 
 // ---------------------------------------------------------------------------
 // WebSocket stub — jsdom has no WebSocket; onMount calls feed.start() which
@@ -32,7 +33,7 @@ describe('App — smoke', () => {
 });
 
 // ---------------------------------------------------------------------------
-// layout
+// layout — default (bitcoin only)
 // ---------------------------------------------------------------------------
 describe('App — layout', () => {
   it('renders the brand heading', () => {
@@ -40,16 +41,51 @@ describe('App — layout', () => {
     expect(getByRole('heading', { level: 1 })).toHaveTextContent('tayrax');
   });
 
-  it('renders one price card per monitored asset', () => {
+  it('renders a price card for the mandatory asset (bitcoin) by default', () => {
     const { getAllByRole } = render(App);
     const assetHeadings = getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent ?? '');
+    expect(assetHeadings).toContain(MANDATORY_ASSET);
+  });
+
+  it('renders only one price card by default (bitcoin only)', () => {
+    const { getAllByRole } = render(App);
+    // h2 headings include section titles (Coins, Charts, Alerts) plus one per asset card
+    const sectionTitles = new Set(['Coins', 'Charts', 'Alerts']);
+    const assetHeadings = getAllByRole('heading', { level: 2 })
       .map((h) => h.textContent ?? '')
-      .filter((t) => (MONITORED_ASSETS as readonly string[]).includes(t));
-    expect(assetHeadings).toEqual([...MONITORED_ASSETS]);
+      .filter((t) => !sectionTitles.has(t));
+    expect(assetHeadings).toEqual([MANDATORY_ASSET]);
   });
 
   it('renders the Add alert button', () => {
     const { getByText } = render(App);
     expect(getByText('Add alert')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// layout — multi-coin (bitcoin + ethereum)
+// ---------------------------------------------------------------------------
+describe('App — layout with multiple coins enabled', () => {
+  beforeAll(() => toggleAsset('ethereum'));
+  afterAll(() => toggleAsset('ethereum'));
+
+  it('renders a price card for each enabled asset', () => {
+    const { getAllByRole } = render(App);
+    const sectionTitles = new Set(['Coins', 'Charts', 'Alerts']);
+    const assetHeadings = getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent ?? '')
+      .filter((t) => !sectionTitles.has(t));
+    expect(assetHeadings).toContain('bitcoin');
+    expect(assetHeadings).toContain('ethereum');
+    expect(assetHeadings).toHaveLength(2);
+  });
+
+  it('renders a chart tab for each enabled asset', () => {
+    const { getAllByRole } = render(App);
+    const tabs = getAllByRole('button').map((b) => b.textContent?.trim() ?? '');
+    expect(tabs).toContain('bitcoin');
+    expect(tabs).toContain('ethereum');
   });
 });
