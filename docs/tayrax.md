@@ -121,25 +121,18 @@ Adding a new coin = adding one string to the list.
 
 ---
 
-### Phase 2 — Technical Indicators
+### Phase 2 — Technical Indicators ✅ Completed (2026-04-15)
 > The bot calculates indicators from price data and generates trading signals.
 
-**Planned indicators (unchanged, still valid):**
-- **SMA / EMA** — Simple and Exponential Moving Averages
-- **RSI** — Relative Strength Index (overbought/oversold)
-- **MACD** — Moving Average Convergence Divergence
-- **Bollinger Bands**
-
-**Features (unchanged):**
-- Candlestick chart visualization (OHLCV data)
-- Signal overlays on charts
-- Alerts based on indicator conditions (e.g., "notify when RSI < 30 on BTC")
-
-**Phase 1 infrastructure reusable in Phase 2:**
-- `BinanceKlineFeed` in `src/lib/binance.ts` already emits finalized 1m candles with close + volume; extending the payload to full OHLC (fields `o`/`h`/`l` are present in the kline message, currently discarded) is a small change.
-- `src/lib/alerts.ts` uses `EvalContext = { price?, volume? }`; adding `indicators?` as a third field keeps existing rules untouched.
-- Historical backfill (needed to seed indicators on load) will require a REST call to Binance `/api/v3/klines`; no WebSocket changes needed.
-- `Chart.svelte` is the new component to add; `src/lib/indicators.ts` is already reserved in the project layout.
+**Implemented:**
+- **SMA(20), SMA(50), EMA(12), EMA(26)** — `src/lib/indicators.ts`
+- **RSI(14)** — Wilder smoothed averages
+- **MACD(12,26,9)** — line, signal, histogram
+- **Bollinger Bands(20)** — upper/middle/lower bands
+- **Candlestick chart** — SVG-based, displays last 60 1m candles with SMA/BB overlays and RSI/MACD sub-pane (`src/components/Chart.svelte`)
+- **Indicator-based alerts** — `rsiBelow`, `rsiAbove`, `macdCross`, `bbBreakout` added to `alerts.ts`; `AlertForm.svelte` updated with grouped options
+- **OHLCV candle store** — `src/lib/candles.ts`: ring buffer of up to 200 candles per asset, persisted to `localStorage`
+- **Historical backfill** — `src/lib/backfill.ts`: fetches 200 1m candles from Binance REST on startup to seed indicators immediately
 
 ---
 

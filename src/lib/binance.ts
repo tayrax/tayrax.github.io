@@ -7,6 +7,9 @@ export type ClosedCandle = {
   asset: string;
   openTime: number;
   closeTime: number;
+  open: number;
+  high: number;
+  low: number;
   close: number;
   baseVolume: number;
 };
@@ -22,6 +25,9 @@ type KlinePayload = {
     s: string;
     i: string;
     x: boolean;
+    o: string;
+    h: string;
+    l: string;
     c: string;
     v: string;
   };
@@ -92,13 +98,25 @@ export class BinanceKlineFeed {
       if (!k || !k.x) return;
       const asset = fromBinanceSymbol(k.s);
       if (!asset) return;
+      const open = Number(k.o);
+      const high = Number(k.h);
+      const low = Number(k.l);
       const close = Number(k.c);
       const baseVolume = Number(k.v);
-      if (!Number.isFinite(close) || !Number.isFinite(baseVolume)) return;
+      if (
+        !Number.isFinite(open) ||
+        !Number.isFinite(high) ||
+        !Number.isFinite(low) ||
+        !Number.isFinite(close) ||
+        !Number.isFinite(baseVolume)
+      ) return;
       const candle: ClosedCandle = {
         asset,
         openTime: k.t,
         closeTime: k.T,
+        open,
+        high,
+        low,
         close,
         baseVolume
       };

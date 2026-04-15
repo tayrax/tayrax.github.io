@@ -37,16 +37,18 @@ tayrax/
 │   │   ├── symbols.ts        # CoinCap id ↔ Binance symbol mapping
 │   │   ├── prices.ts         # Price store + 1h rolling history + snapshot cache
 │   │   ├── volumes.ts        # Volume store + volumeSpikeRatio
-│   │   ├── alerts.ts         # Alert rule types, store, evaluate()
+│   │   ├── alerts.ts         # Alert rule types, store, evaluate() — Phase 1 + indicator rules (Phase 2)
 │   │   ├── notifications.ts  # Web Notifications API wrapper
 │   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
-│   │   └── indicators.ts     # Technical indicators (Phase 2)
+│   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
+│   │   ├── backfill.ts       # Binance REST /api/v3/klines historical seed on startup
+│   │   └── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
 │   ├── components/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
 │   │   ├── NavMenu.svelte    # Clickable logo → dropdown nav (Dashboard / System / Logs)
-│   │   └── Chart.svelte      # Phase 2
+│   │   └── Chart.svelte      # SVG candlestick chart with SMA/BB overlays + RSI/MACD sub-pane
 │   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
@@ -84,8 +86,8 @@ root (`/manifest.json`, `/sw.js`, `/tayrax-logo.svg`). Do not create a separate
 
 The project is built incrementally. Do not implement features from a later phase until the current one is complete and stable.
 
-1. **Phase 1 — Simple Alerts:** live prices + user-defined alert rules + browser notifications
-2. **Phase 2 — Technical Indicators:** OHLCV charts, RSI/SMA/MACD/Bollinger Bands, signal alerts
+1. **Phase 1 — Simple Alerts:** live prices + user-defined alert rules + browser notifications ✅ Complete
+2. **Phase 2 — Technical Indicators:** OHLCV charts, RSI/SMA/MACD/Bollinger Bands, signal alerts ✅ Complete
 3. **Phase 3 — Semi-Automatic Trading:** exchange API integration, bot proposes trades, user confirms
 4. **Phase 4 — Fully Automatic Trading:** autonomous execution, paper trading mode, risk management
 
@@ -228,6 +230,9 @@ Rules:
 - **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
 - **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts`, `binance-price.ts`, and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
 - **Action log ring buffer** — `logAction` in `src/lib/logs.ts` caps the stored entry list at `LOG_MAX_ENTRIES` (500, in `config.ts`). New entries are prepended so the store is always reverse-chronological. Persisted under `STORAGE_KEYS.logs` (`tayrax.logs.v1`); open tabs stay in sync via a module-level `storage` event listener. When adding a new action type, extend the `LogKind` union in `logs.ts` — the compiler will then flag every render site that hasn't been updated (e.g. `KIND_LABEL` in `Logs.svelte`).
+- **Candle history backfill** — On startup `backfillAll` in `src/lib/backfill.ts` fetches up to `CANDLE_HISTORY_MAX` (200) recent 1m candles per asset from the Binance REST API and calls `prependCandles`. This is fire-and-forget: failures are swallowed so a network error or rate-limit doesn't block startup. The candle store is persisted under `STORAGE_KEYS.candles` (`tayrax.candles.v1`). Live candles (from `BinanceKlineFeed`) always win over historical candles when the same `openTime` exists.
+- **Indicator warm-up** — Indicators are null until their minimum candle counts are met: SMA(n) / BB(n) need n candles; RSI(14) needs 15; MACD(12,26,9) needs 34 (26 + 9 − 1). With a successful backfill these are met immediately at load time. Indicator-based alert rules return null (skip) when the required data isn't available yet — they do not fire false positives on insufficient history.
+- **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
 
 ---
 

@@ -187,6 +187,143 @@ describe('evaluate — volumeSpike', () => {
 });
 
 // ---------------------------------------------------------------------------
+// evaluate — rsiBelow / rsiAbove
+// ---------------------------------------------------------------------------
+describe('evaluate — rsiBelow', () => {
+  const alert = makeAlert({ kind: 'rsiBelow', value: 30 } as StoredAlert);
+  const now = Date.now();
+
+  it('fires when RSI is below the threshold', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: 25, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).not.toBeNull();
+  });
+
+  it('does not fire when RSI equals the threshold', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: 30, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).toBeNull();
+  });
+
+  it('does not fire when RSI is above the threshold', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: 45, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).toBeNull();
+  });
+
+  it('does not fire when rsi14 is null (not enough data)', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).toBeNull();
+  });
+
+  it('returns null when no indicators are provided', () => {
+    expect(evaluate(alert, {}, now)).toBeNull();
+  });
+});
+
+describe('evaluate — rsiAbove', () => {
+  const alert = makeAlert({ kind: 'rsiAbove', value: 70 } as StoredAlert);
+  const now = Date.now();
+
+  it('fires when RSI is above the threshold', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: 75, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).not.toBeNull();
+  });
+
+  it('does not fire at or below the threshold', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: 70, macd: null, bb20: null } };
+    expect(evaluate(alert, ctx, now)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluate — macdCross
+// ---------------------------------------------------------------------------
+describe('evaluate — macdCross', () => {
+  const bullishAlert = makeAlert({ kind: 'macdCross', direction: 'bullish' } as StoredAlert);
+  const bearishAlert = makeAlert({ kind: 'macdCross', direction: 'bearish' } as StoredAlert);
+  const now = Date.now();
+
+  const macdCtx = (histogram: number): EvalContext => ({
+    indicators: {
+      sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null,
+      macd: { macd: 0.01, signal: histogram > 0 ? -0.01 : 0.01, histogram },
+      bb20: null
+    }
+  });
+
+  it('bullish fires when histogram > 0', () => {
+    expect(evaluate(bullishAlert, macdCtx(0.05), now)).not.toBeNull();
+  });
+
+  it('bullish does not fire when histogram <= 0', () => {
+    expect(evaluate(bullishAlert, macdCtx(0), now)).toBeNull();
+    expect(evaluate(bullishAlert, macdCtx(-0.05), now)).toBeNull();
+  });
+
+  it('bearish fires when histogram < 0', () => {
+    expect(evaluate(bearishAlert, macdCtx(-0.05), now)).not.toBeNull();
+  });
+
+  it('bearish does not fire when histogram >= 0', () => {
+    expect(evaluate(bearishAlert, macdCtx(0), now)).toBeNull();
+    expect(evaluate(bearishAlert, macdCtx(0.05), now)).toBeNull();
+  });
+
+  it('returns null when macd is null', () => {
+    const ctx: EvalContext = { indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null, macd: null, bb20: null } };
+    expect(evaluate(bullishAlert, ctx, now)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluate — bbBreakout
+// ---------------------------------------------------------------------------
+describe('evaluate — bbBreakout', () => {
+  const aboveAlert = makeAlert({ kind: 'bbBreakout', direction: 'above' } as StoredAlert);
+  const belowAlert = makeAlert({ kind: 'bbBreakout', direction: 'below' } as StoredAlert);
+  const now = Date.now();
+
+  const bbCtx = (price: number): EvalContext => ({
+    price: { price, prevPrice: null, updatedAt: now, history: [] },
+    indicators: {
+      sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null, macd: null,
+      bb20: { upper: 110, middle: 100, lower: 90 }
+    }
+  });
+
+  it('above fires when price > upper band', () => {
+    expect(evaluate(aboveAlert, bbCtx(115), now)).not.toBeNull();
+  });
+
+  it('above does not fire when price is at or below upper band', () => {
+    expect(evaluate(aboveAlert, bbCtx(110), now)).toBeNull();
+    expect(evaluate(aboveAlert, bbCtx(100), now)).toBeNull();
+  });
+
+  it('below fires when price < lower band', () => {
+    expect(evaluate(belowAlert, bbCtx(85), now)).not.toBeNull();
+  });
+
+  it('below does not fire when price is at or above lower band', () => {
+    expect(evaluate(belowAlert, bbCtx(90), now)).toBeNull();
+    expect(evaluate(belowAlert, bbCtx(100), now)).toBeNull();
+  });
+
+  it('returns null when bb20 is null', () => {
+    const ctx: EvalContext = {
+      price: { price: 120, prevPrice: null, updatedAt: now, history: [] },
+      indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null, macd: null, bb20: null }
+    };
+    expect(evaluate(aboveAlert, ctx, now)).toBeNull();
+  });
+
+  it('returns null when no price context', () => {
+    const ctx: EvalContext = {
+      indicators: { sma20: null, sma50: null, ema12: null, ema26: null, rsi14: null, macd: null, bb20: { upper: 110, middle: 100, lower: 90 } }
+    };
+    expect(evaluate(aboveAlert, ctx, now)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // store operations: addAlert / removeAlert / markFired
 // ---------------------------------------------------------------------------
 describe('alert store', () => {

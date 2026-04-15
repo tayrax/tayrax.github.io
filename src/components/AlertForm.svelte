@@ -10,6 +10,8 @@
   let low = '';
   let high = '';
   let multiplier = '';
+  let macdDirection: 'bullish' | 'bearish' = 'bullish';
+  let bbDirection: 'above' | 'below' = 'above';
   let error = '';
 
   const reset = (): void => {
@@ -37,6 +39,24 @@
         return;
       }
       addAlert({ asset, kind: 'volumeSpike', multiplier: m });
+    } else if (kind === 'rsiBelow') {
+      const v = Number(value);
+      if (!Number.isFinite(v) || v <= 0 || v >= 100) {
+        error = 'RSI threshold must be 1–99';
+        return;
+      }
+      addAlert({ asset, kind: 'rsiBelow', value: v });
+    } else if (kind === 'rsiAbove') {
+      const v = Number(value);
+      if (!Number.isFinite(v) || v <= 0 || v >= 100) {
+        error = 'RSI threshold must be 1–99';
+        return;
+      }
+      addAlert({ asset, kind: 'rsiAbove', value: v });
+    } else if (kind === 'macdCross') {
+      addAlert({ asset, kind: 'macdCross', direction: macdDirection });
+    } else if (kind === 'bbBreakout') {
+      addAlert({ asset, kind: 'bbBreakout', direction: bbDirection });
     } else {
       const v = Number(value);
       if (!Number.isFinite(v)) {
@@ -63,11 +83,19 @@
   <label>
     Rule
     <select bind:value={kind}>
-      <option value="above">price above</option>
-      <option value="below">price below</option>
-      <option value="range">price in range</option>
-      <option value="pctChange">% change /1h</option>
-      <option value="volumeSpike">volume spike /1m</option>
+      <optgroup label="Price">
+        <option value="above">price above</option>
+        <option value="below">price below</option>
+        <option value="range">price in range</option>
+        <option value="pctChange">% change /1h</option>
+        <option value="volumeSpike">volume spike /1m</option>
+      </optgroup>
+      <optgroup label="Indicators">
+        <option value="rsiBelow">RSI below (oversold)</option>
+        <option value="rsiAbove">RSI above (overbought)</option>
+        <option value="macdCross">MACD crossover</option>
+        <option value="bbBreakout">Bollinger Band breakout</option>
+      </optgroup>
     </select>
   </label>
   {#if kind === 'range'}
@@ -77,6 +105,27 @@
     <label>
       Multiplier (×)
       <input type="number" step="any" min="1" bind:value={multiplier} required />
+    </label>
+  {:else if kind === 'rsiBelow' || kind === 'rsiAbove'}
+    <label>
+      RSI threshold
+      <input type="number" step="1" min="1" max="99" bind:value={value} required placeholder={kind === 'rsiBelow' ? '30' : '70'} />
+    </label>
+  {:else if kind === 'macdCross'}
+    <label>
+      Direction
+      <select bind:value={macdDirection}>
+        <option value="bullish">bullish (MACD crosses above signal)</option>
+        <option value="bearish">bearish (MACD crosses below signal)</option>
+      </select>
+    </label>
+  {:else if kind === 'bbBreakout'}
+    <label>
+      Direction
+      <select bind:value={bbDirection}>
+        <option value="above">above upper band</option>
+        <option value="below">below lower band</option>
+      </select>
     </label>
   {:else}
     <label>

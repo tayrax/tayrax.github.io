@@ -5,13 +5,18 @@ import { writable, type Readable } from 'svelte/store';
 import { ALERT_COOLDOWN_MS, STORAGE_KEYS } from './config';
 import { pctChangeOverWindow, type PriceState } from './prices';
 import { volumeSpikeRatio, type VolumeState } from './volumes';
+import type { IndicatorValues } from './indicators';
 
 export type AlertRule =
   | { id: string; asset: string; kind: 'above'; value: number }
   | { id: string; asset: string; kind: 'below'; value: number }
   | { id: string; asset: string; kind: 'range'; low: number; high: number }
   | { id: string; asset: string; kind: 'pctChange'; value: number }
-  | { id: string; asset: string; kind: 'volumeSpike'; multiplier: number };
+  | { id: string; asset: string; kind: 'volumeSpike'; multiplier: number }
+  | { id: string; asset: string; kind: 'rsiBelow'; value: number }
+  | { id: string; asset: string; kind: 'rsiAbove'; value: number }
+  | { id: string; asset: string; kind: 'macdCross'; direction: 'bullish' | 'bearish' }
+  | { id: string; asset: string; kind: 'bbBreakout'; direction: 'above' | 'below' };
 
 export type StoredAlert = AlertRule & { lastFiredAt: number | null };
 
@@ -76,7 +81,7 @@ export const markFired = (id: string, at: number): void => {
 
 export type Evaluation = { alert: StoredAlert; message: string };
 
-export type EvalContext = { price?: PriceState; volume?: VolumeState };
+export type EvalContext = { price?: PriceState; volume?: VolumeState; indicators?: IndicatorValues };
 
 export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Evaluation | null => {
   if (alert.lastFiredAt !== null && now - alert.lastFiredAt < ALERT_COOLDOWN_MS) return null;
@@ -128,6 +133,50 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
             message: `${alert.asset} 1m volume spike: ${ratio.toFixed(2)}× median (threshold ${alert.multiplier}×)`
           }
         : null;
+    }
+    case 'rsiBelow': {
+      if (!ctx.indicators) return null;
+      const { rsi14 } = ctx.indicators;
+      if (rsi14 === null) return null;
+      return rsi14 < alert.value
+        ? { alert, message: `${alert.asset} RSI(14) is ${rsi14.toFixed(1)} (below ${alert.value} — oversold)` }
+        : null;
+    }
+    case 'rsiAbove': {
+      if (!ctx.indicators) return null;
+      const { rsi14 } = ctx.indicators;
+      if (rsi14 === null) return null;
+      return rsi14 > alert.value
+        ? { alert, message: `${alert.asset} RSI(14) is ${rsi14.toFixed(1)} (above ${alert.value} — overbought)` }
+        : null;
+    }
+    case 'macdCross': {
+      if (!ctx.indicators) return null;
+      const { macd } = ctx.indicators;
+      if (macd === null) return null;
+      if (alert.direction === 'bullish') {
+        return macd.histogram > 0
+          ? { alert, message: `${alert.asset} MACD bullish crossover (histogram ${macd.histogram.toFixed(4)})` }
+          : null;
+      } else {
+        return macd.histogram < 0
+          ? { alert, message: `${alert.asset} MACD bearish crossover (histogram ${macd.histogram.toFixed(4)})` }
+          : null;
+      }
+    }
+    case 'bbBreakout': {
+      if (!ctx.indicators || !ctx.price) return null;
+      const { bb20 } = ctx.indicators;
+      if (bb20 === null) return null;
+      if (alert.direction === 'above') {
+        return ctx.price.price > bb20.upper
+          ? { alert, message: `${alert.asset} broke above upper Bollinger Band ($${fmt(bb20.upper)})` }
+          : null;
+      } else {
+        return ctx.price.price < bb20.lower
+          ? { alert, message: `${alert.asset} broke below lower Bollinger Band ($${fmt(bb20.lower)})` }
+          : null;
+      }
     }
   }
 };

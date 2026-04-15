@@ -10,6 +10,10 @@
       case 'range': return `${a.asset} in $${a.low}–$${a.high}`;
       case 'pctChange': return `${a.asset} |Δ| ≥ ${a.value}% /1h`;
       case 'volumeSpike': return `${a.asset} volume ≥ ${a.multiplier}× median /1m`;
+      case 'rsiBelow': return `${a.asset} RSI(14) < ${a.value}`;
+      case 'rsiAbove': return `${a.asset} RSI(14) > ${a.value}`;
+      case 'macdCross': return `${a.asset} MACD ${a.direction} crossover`;
+      case 'bbBreakout': return `${a.asset} BB breakout ${a.direction} band`;
     }
   };
 </script>

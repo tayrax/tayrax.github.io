@@ -6,6 +6,7 @@
   import AlertForm from './components/AlertForm.svelte';
   import AlertList from './components/AlertList.svelte';
   import NavMenu from './components/NavMenu.svelte';
+  import Chart from './components/Chart.svelte';
   import { MONITORED_ASSETS, PRICE_PROVIDER } from './lib/config';
   import type { PriceFeedStatus, PriceProvider } from './lib/provider';
   import { PriceFeed } from './lib/websocket';
@@ -13,6 +14,9 @@
   import { BinanceKlineFeed } from './lib/binance';
   import { applyTick, prices } from './lib/prices';
   import { applyCandle, volumes } from './lib/volumes';
+  import { applyClosedCandle, candles } from './lib/candles';
+  import { backfillAll } from './lib/backfill';
+  import { computeIndicators } from './lib/indicators';
   import { alerts, evaluate, markFired } from './lib/alerts';
   import { logAction } from './lib/logs';
   import {
@@ -37,18 +41,22 @@
   const unsubTick = feed.onTick(({ asset, price, receivedAt }) => {
     applyTick(asset, price, receivedAt);
   });
-  const unsubCandle = klineFeed.onCandleClosed(({ asset, baseVolume, closeTime }) => {
-    applyCandle(asset, baseVolume, closeTime);
+  const unsubCandle = klineFeed.onCandleClosed((candle) => {
+    applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
+    applyClosedCandle(candle);
   });
 
   const runEvaluation = (): void => {
     const now = Date.now();
     const priceMap = getPricesSnapshot();
     const volumeMap = getVolumesSnapshot();
+    const candleMap = getCandlesSnapshot();
     for (const alert of getAlertsSnapshot()) {
+      const assetCandles = candleMap[alert.asset] ?? [];
+      const indicators = assetCandles.length > 0 ? computeIndicators(assetCandles) : undefined;
       const hit = evaluate(
         alert,
-        { price: priceMap[alert.asset], volume: volumeMap[alert.asset] },
+        { price: priceMap[alert.asset], volume: volumeMap[alert.asset], indicators },
         now
       );
       if (!hit) continue;
@@ -81,6 +89,12 @@
     return currentVolumesCache;
   }
 
+  let currentCandlesCache: typeof $candles = {};
+  const unsubCandlesCache = candles.subscribe((c) => (currentCandlesCache = c));
+  function getCandlesSnapshot(): typeof $candles {
+    return currentCandlesCache;
+  }
+
   const unsubPriceEval = prices.subscribe(() => runEvaluation());
   const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
 
@@ -89,10 +103,12 @@
   };
 
   let helpOpen = false;
+  let selectedAsset: string = MONITORED_ASSETS[0];
 
   onMount(() => {
     feed.start();
     klineFeed.start();
+    backfillAll(MONITORED_ASSETS);
   });
 
   onDestroy(() => {
@@ -104,6 +120,7 @@
     unsubAlertsCache();
     unsubPricesCache();
     unsubVolumesCache();
+    unsubCandlesCache();
     feed.stop();
     klineFeed.stop();
   });
@@ -135,6 +152,10 @@
       <dd>A <em>cached</em> label appears on a price card when no update has been received for more than 30 seconds, indicating a stale or disconnected feed.</dd>
       <dt>Volume-spike alerts</dt>
       <dd>Volume-spike detection requires ≥10 closed 1-minute candles (≈10 minutes of runtime) before a rule can fire. Expect a warm-up period after the app loads.</dd>
+      <dt>Charts and indicators</dt>
+      <dd>On startup, up to 200 recent 1-minute candles are fetched from Binance REST to seed the chart. SMA(20), SMA(50), Bollinger Bands, RSI(14), and MACD(12,26,9) are computed from this history. If the backfill fetch fails, indicators become available as live candles arrive.</dd>
+      <dt>Indicator alerts</dt>
+      <dd>RSI, MACD crossover, and Bollinger Band breakout alerts require at least 26–34 candles of history before they can fire (MACD needs 26 + 9 signal periods). A warm-up period applies if the REST backfill is unavailable.</dd>
     </dl>
   </div>
 {/if}
@@ -156,6 +177,23 @@
     {#each MONITORED_ASSETS as asset}
       <PriceCard {asset} state={$prices[asset]} />
     {/each}
+  </section>
+
+  <section class="charts">
+    <div class="charts-header">
+      <h2>Charts</h2>
+      <div class="asset-tabs">
+        {#each MONITORED_ASSETS as asset}
+          <button
+            type="button"
+            class="tab"
+            class:active={selectedAsset === asset}
+            on:click={() => (selectedAsset = asset)}
+          >{asset}</button>
+        {/each}
+      </div>
+    </div>
+    <Chart asset={selectedAsset} />
   </section>
 
   <section>
@@ -242,6 +280,27 @@
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
   }
+  .charts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .asset-tabs { display: flex; gap: 0.3rem; }
+  .tab {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #333;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .tab:hover { color: #aaa; border-color: #444; }
+  .tab.active { background: #1a1a2e; color: #818cf8; border-color: #3730a3; }
   h2 { font-size: 1rem; margin: 0 0 0.75rem 0; color: #ccc; }
   .list { margin-top: 0.75rem; }
 </style>
