@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __APP_BUILD__: JSON.stringify(mode === 'development' ? 'devel' : buildStamp),
+      __APP_CDN__: JSON.stringify(cdnUrl),
     },
     publicDir: resolve(__dirname, 'static'),
     base: cdnUrl,

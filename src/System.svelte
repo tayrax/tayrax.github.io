@@ -158,6 +158,7 @@
   // ---------------------------------------------------------------------------
   const appVersion: string = __APP_VERSION__;
   const appBuild: string = __APP_BUILD__;
+  const appCdn: string = __APP_CDN__;
 
   // ---------------------------------------------------------------------------
   // Browser capabilities
@@ -210,6 +211,10 @@
       <div class="cap-row">
         <span class="cap-name">App build</span>
         <span class="val">{appBuild}</span>
+      </div>
+      <div class="cap-row">
+        <span class="cap-name">CDN</span>
+        <span class="val">{appCdn}</span>
       </div>
     </div>
   </section>
