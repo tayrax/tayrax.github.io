@@ -5,6 +5,7 @@
   import PriceCard from './components/PriceCard.svelte';
   import AlertForm from './components/AlertForm.svelte';
   import AlertList from './components/AlertList.svelte';
+  import NavMenu from './components/NavMenu.svelte';
   import { MONITORED_ASSETS, PRICE_PROVIDER } from './lib/config';
   import type { PriceFeedStatus, PriceProvider } from './lib/provider';
   import { PriceFeed } from './lib/websocket';
@@ -110,7 +111,7 @@
 
 <header class="top">
   <div class="brand">
-    <img src="/tayrax-logo.svg" alt="" width="32" height="32" />
+    <NavMenu size={32} />
     <h1>tayrax</h1>
   </div>
   <div class="right">

@@ -45,6 +45,7 @@ tayrax/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
+│   │   ├── NavMenu.svelte    # Clickable logo → dropdown nav (Dashboard / System / Logs)
 │   │   └── Chart.svelte      # Phase 2
 │   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup

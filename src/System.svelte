@@ -1,6 +1,8 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
+  import NavMenu from './components/NavMenu.svelte';
+
   // ---------------------------------------------------------------------------
   // Types
   // ---------------------------------------------------------------------------
@@ -181,12 +183,11 @@
 
 <header class="top">
   <div class="brand">
-    <img src="/tayrax-logo.svg" alt="" width="28" height="28" />
+    <NavMenu />
     <span>tayrax</span>
     <span class="sep">/</span>
     <span class="page">system</span>
   </div>
-  <a class="back" href="/">← back to app</a>
 </header>
 
 <main>
@@ -477,12 +478,6 @@
   }
   .sep { color: #444; }
   .page { color: #888; font-weight: 400; }
-  .back {
-    font-size: 0.8rem;
-    color: #666;
-    text-decoration: none;
-  }
-  .back:hover { color: #aaa; }
 
   main {
     max-width: 860px;
