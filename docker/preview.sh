@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 exec docker run -it --rm -u devel \
-	--name tayrax-debug \
-	--hostname tayrax-debug.local \
+	--name tayrax-preview \
+	--hostname tayrax-preview.local \
 	-v "${PWD}:/opt/tayrax/site" \
 	--workdir /opt/tayrax/site \
-	--entrypoint /opt/tayrax/site/docker/run/debug.sh \
+	--entrypoint /opt/tayrax/site/docker/run/preview.sh \
 	-p 127.0.0.1:1980:1980 \
 	tayrax/site
