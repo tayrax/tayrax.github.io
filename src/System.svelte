@@ -199,10 +199,9 @@
 <main>
 
   <!-- ======================================================================
-       Browser capabilities
+       App identity
   ======================================================================= -->
   <section>
-    <h2>Browser capabilities</h2>
     <div class="cap-grid">
       <div class="cap-row">
         <span class="cap-name">App version</span>
@@ -212,6 +211,15 @@
         <span class="cap-name">App build</span>
         <span class="val">{appBuild}</span>
       </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       Browser capabilities
+  ======================================================================= -->
+  <section>
+    <h2>Browser capabilities</h2>
+    <div class="cap-grid">
       <div class="cap-row">
         <span class="cap-name">WebSocket API</span>
         <span class="badge" class:ok={wsSupported} class:fail={!wsSupported}>
