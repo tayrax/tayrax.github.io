@@ -154,6 +154,12 @@
   }
 
   // ---------------------------------------------------------------------------
+  // App version
+  // ---------------------------------------------------------------------------
+  const appVersion: string = __APP_VERSION__;
+  const appBuild: string = __APP_BUILD__;
+
+  // ---------------------------------------------------------------------------
   // Browser capabilities
   // ---------------------------------------------------------------------------
   const wsSupported = typeof WebSocket !== 'undefined';
@@ -198,6 +204,14 @@
   <section>
     <h2>Browser capabilities</h2>
     <div class="cap-grid">
+      <div class="cap-row">
+        <span class="cap-name">App version</span>
+        <span class="val">{appVersion}</span>
+      </div>
+      <div class="cap-row">
+        <span class="cap-name">App build</span>
+        <span class="val">{appBuild}</span>
+      </div>
       <div class="cap-row">
         <span class="cap-name">WebSocket API</span>
         <span class="badge" class:ok={wsSupported} class:fail={!wsSupported}>
