@@ -5,7 +5,7 @@ docker:
 .PHONY: check
 check:
 	@git ls-files | grep -F .sh | xargs shellcheck
-	@python3 -m py_compile upgrade.py && rm -rf __pycache__
+	@python3 -m py_compile upgrade.py release.py && rm -rf __pycache__
 
 .PHONY: ci-check
 ci-check: check
