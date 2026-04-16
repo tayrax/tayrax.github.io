@@ -5,10 +5,11 @@
   import NavMenu from './components/NavMenu.svelte';
 
   const KIND_LABEL: Record<LogKind, string> = {
-    alertDispatched: 'alert dispatched'
+    alertDispatched: 'alert dispatched',
+    tradeProposed: 'trade proposed'
   };
 
-  const ALL_KINDS: readonly LogKind[] = ['alertDispatched'] as const;
+  const ALL_KINDS: readonly LogKind[] = ['alertDispatched', 'tradeProposed'] as const;
 
   let filter: LogKind | 'all' = 'all';
 
@@ -221,6 +222,7 @@
     white-space: nowrap;
   }
   .kind-alertDispatched { background: #1e3a5f; color: #93c5fd; }
+  .kind-tradeProposed { background: #2d2200; color: #fbbf24; }
 
   .asset {
     color: #ccc;

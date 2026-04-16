@@ -21,6 +21,7 @@
   import { backfillAll } from './lib/backfill';
   import { computeIndicators } from './lib/indicators';
   import { alerts, evaluate, markFired } from './lib/alerts';
+  import { evaluateProposals } from './lib/proposals';
   import { logAction } from './lib/logs';
   import {
     currentPermission,
@@ -97,6 +98,20 @@
         message: hit.message,
         data: { alertId: alert.id, alertKind: alert.kind }
       });
+    }
+    for (const asset of enabled) {
+      const assetCandles = candleMap[asset] ?? [];
+      if (assetCandles.length === 0) continue;
+      const indicators = computeIndicators(assetCandles);
+      const proposals = evaluateProposals(asset, indicators, priceMap[asset], now);
+      for (const p of proposals) {
+        logAction({
+          kind: 'tradeProposed',
+          asset: p.asset,
+          message: p.message,
+          data: { signal: p.signal, direction: p.direction, indicatorValue: p.indicatorValue, price: p.price }
+        });
+      }
     }
   };
 

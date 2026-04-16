@@ -4,7 +4,7 @@
 import { writable, type Readable } from 'svelte/store';
 import { LOG_MAX_ENTRIES, STORAGE_KEYS } from './config';
 
-export type LogKind = 'alertDispatched';
+export type LogKind = 'alertDispatched' | 'tradeProposed';
 
 export type LogData = Record<string, string | number | boolean>;
 

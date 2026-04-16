@@ -68,6 +68,8 @@ export const PRICE_TICK_MIN_INTERVAL_MS = 5_000;
 
 export const ALERT_COOLDOWN_MS = 5 * 60 * 1000;
 
+export const PROPOSAL_COOLDOWN_MS = 30 * 60 * 1000;
+
 export const LOG_MAX_ENTRIES = 500;
 
 export const CANDLE_HISTORY_MAX = 200;
