@@ -38,6 +38,7 @@ tayrax/
 │   │   ├── prices.ts         # Price store + 1h rolling history + snapshot cache
 │   │   ├── volumes.ts        # Volume store + volumeSpikeRatio
 │   │   ├── alerts.ts         # Alert rule types, store, evaluate() — Phase 1 + indicator rules (Phase 2)
+│   │   ├── proposals.ts      # Trade proposal types, evaluateProposals(), per-signal cooldown (Phase 3)
 │   │   ├── notifications.ts  # Web Notifications API wrapper
 │   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
@@ -93,7 +94,7 @@ The project is built incrementally. Do not implement features from a later phase
 
 1. **Phase 1 — Simple Alerts:** live prices + user-defined alert rules + browser notifications ✅ Complete
 2. **Phase 2 — Technical Indicators:** OHLCV charts, RSI/SMA/MACD/Bollinger Bands, signal alerts ✅ Complete
-3. **Phase 3 — Semi-Automatic Trading:** exchange API integration, bot proposes trades, user confirms
+3. **Phase 3 — Semi-Automatic Trading:** indicator-driven trade proposals logged to action log (Phase 3a, no exchange required); exchange API integration + order execution (Phase 3b)
 4. **Phase 4 — Fully Automatic Trading:** autonomous execution, paper trading mode, risk management
 
 ---
@@ -236,6 +237,7 @@ Rules:
 - Call `logAction` at the point where the action is taken, not after the fact.
 - Every new action kind requires a new entry in the `LogKind` union in `src/lib/logs.ts`. The TypeScript compiler will then flag every render site that is missing a case (e.g. `KIND_LABEL` in `Logs.svelte`) — fix all flagged sites before committing.
 - Do not log routine data updates (price ticks, candle closes) — only log discrete decisions or outputs the user would care to audit.
+- Trade proposals (`tradeProposed`) are generated in `src/lib/proposals.ts` and logged via `logAction`. They are driven by indicator signals (RSI, MACD, BB) and subject to `PROPOSAL_COOLDOWN_MS` per asset per signal to avoid flooding the log.
 
 ---
 

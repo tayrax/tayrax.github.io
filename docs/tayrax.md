@@ -137,12 +137,19 @@ Adding a new coin = adding one string to the list.
 ---
 
 ### Phase 3 — Semi-Automatic Trading
-> The bot suggests actions and asks for user confirmation before executing.
+> The bot suggests actions based on indicator signals. Exchange integration and order execution are deferred to Phase 3b; this phase focuses on proposal logic and auditability.
 
-**Features:**
+**Phase 3a — Trade Proposals (no exchange account required):**
+- `src/lib/proposals.ts` evaluates indicator state per asset each candle close and emits `TradeProposal` objects when signal conditions are met
+- Signal triggers: RSI oversold/overbought, MACD bullish/bearish crossover, Bollinger Band breakout
+- Each proposal is logged via `logAction('tradeProposed', ...)` and appears on the Logs page
+- Per-asset-per-signal cooldown (`PROPOSAL_COOLDOWN_MS`) prevents flooding the log
+- No exchange account or API key needed
+
+**Phase 3b — Order execution (future, requires exchange API key):**
 - Connect to exchange account via API key (Binance, Kraken, or Coinbase)
-- Bot proposes: "RSI is 28 on SOL — buy $50 worth?"
-- User approves or dismisses via UI
+- Replace `logAction` call in proposal evaluation with an actual order submission
+- User reviews open proposals and confirms/dismisses before orders execute
 - Order history and basic P&L tracking
 
 ---
