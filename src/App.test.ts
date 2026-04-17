@@ -20,7 +20,19 @@ class MockWebSocket {
   close() {}
 }
 
-beforeAll(() => vi.stubGlobal('WebSocket', MockWebSocket));
+class MockSharedWorker {
+  port = {
+    postMessage(_msg: unknown) {},
+    addEventListener(_type: string, _fn: unknown) {},
+    start() {},
+    close() {},
+  };
+}
+
+beforeAll(() => {
+  vi.stubGlobal('WebSocket', MockWebSocket);
+  vi.stubGlobal('SharedWorker', MockSharedWorker);
+});
 afterAll(() => vi.unstubAllGlobals());
 
 // ---------------------------------------------------------------------------

@@ -8,145 +8,37 @@
   import NavMenu from './components/NavMenu.svelte';
   import Chart from './components/Chart.svelte';
   import CoinSelector from './components/CoinSelector.svelte';
-  import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
+  import { MANDATORY_ASSET, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
   import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
-  import type { PriceFeedStatus, PriceProvider } from './lib/provider';
-  import { PriceFeed } from './lib/websocket';
-  import { BinancePriceFeed } from './lib/binance-price';
-  import { BinanceKlineFeed } from './lib/binance';
+  import type { PriceFeedStatus } from './lib/provider';
   import { applyTick, prices, pruneAssets } from './lib/prices';
-  import { applyCandle, volumes, pruneVolumes } from './lib/volumes';
-  import { applyClosedCandle, candleStores, pruneCandles } from './lib/candles';
-  import type { CandleMap } from './lib/candles';
-  import { backfillAll } from './lib/backfill';
-  import { computeIndicators } from './lib/indicators';
-  import { alerts, evaluate, markFired, getAlertInterval } from './lib/alerts';
-  import { evaluateProposals } from './lib/proposals';
-  import { logAction } from './lib/logs';
+  import { applyCandle, pruneVolumes } from './lib/volumes';
+  import { applyClosedCandle, pruneCandles } from './lib/candles';
+  import { alerts } from './lib/alerts';
   import {
     currentPermission,
     notify,
     requestPermission,
     type NotificationPermissionState
   } from './lib/notifications';
+  import { createBotClient } from './lib/bot-client';
+  import type { BotClient } from './lib/bot-client';
+  import type { WorkerToTab } from './lib/bot-types';
 
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
 
-  // Track enabled assets — declared early so runEvaluation can reference it safely
   let mounted = false;
   let currentEnabledCache: AssetId[] = [];
 
-  // Feed instances — created/recreated when enabled assets change
-  let feed: PriceProvider | null = null;
-  let klineFeed: BinanceKlineFeed | null = null;
-  let unsubFeedStatus: (() => void) | null = null;
-  let unsubFeedTick: (() => void) | null = null;
-  let unsubFeedCandle: (() => void) | null = null;
-
-  function createPriceFeed(assets: readonly AssetId[]): PriceProvider {
-    if (PRICE_PROVIDER === 'binance') return new BinancePriceFeed(assets);
-    return new PriceFeed({ assets });
-  }
-
-  function startFeeds(assets: readonly AssetId[]): void {
-    // Tear down existing feeds
-    unsubFeedStatus?.();
-    unsubFeedTick?.();
-    unsubFeedCandle?.();
-    feed?.stop();
-    klineFeed?.stop();
-
-    feed = createPriceFeed(assets);
-    klineFeed = new BinanceKlineFeed(assets);
-
-    unsubFeedStatus = feed.onStatus((s) => (status = s));
-    unsubFeedTick = feed.onTick(({ asset, price, receivedAt }) => {
-      applyTick(asset, price, receivedAt);
-    });
-    unsubFeedCandle = klineFeed.onCandleClosed((candle) => {
-      if (candle.interval === '1m') {
-        applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
-      }
-      applyClosedCandle(candle.interval, candle);
-    });
-
-    feed.start();
-    klineFeed.start();
-  }
-
-  const runEvaluation = (): void => {
-    const now = Date.now();
-    const priceMap = getPricesSnapshot();
-    const volumeMap = getVolumesSnapshot();
-    const enabled = new Set(currentEnabledCache);
-    for (const alert of getAlertsSnapshot()) {
-      if (!enabled.has(alert.asset as AssetId)) continue;
-      const alertInterval = getAlertInterval(alert);
-      const assetCandles = candlesByInterval[alertInterval][alert.asset] ?? [];
-      const indicators = assetCandles.length > 0 ? computeIndicators(assetCandles) : undefined;
-      const hit = evaluate(
-        alert,
-        { price: priceMap[alert.asset], volume: volumeMap[alert.asset], indicators },
-        now
-      );
-      if (!hit) continue;
-      markFired(alert.id, now);
-      notify(`tayrax · ${alert.asset}`, hit.message);
-      logAction({
-        kind: 'alertDispatched',
-        asset: alert.asset,
-        message: hit.message,
-        data: { alertId: alert.id, alertKind: alert.kind }
-      });
-    }
-    for (const interval of CANDLE_INTERVALS) {
-      for (const asset of enabled) {
-        const assetCandles = candlesByInterval[interval][asset] ?? [];
-        if (assetCandles.length === 0) continue;
-        const indicators = computeIndicators(assetCandles);
-        const proposals = evaluateProposals(asset, interval, indicators, priceMap[asset], now);
-        for (const p of proposals) {
-          logAction({
-            kind: 'tradeProposed',
-            asset: p.asset,
-            message: p.message,
-            data: { interval: p.interval, signal: p.signal, direction: p.direction, indicatorValue: p.indicatorValue, price: p.price }
-          });
-        }
-      }
-    }
-  };
-
-  let currentAlertsCache: typeof $alerts = [];
-  const unsubAlertsCache = alerts.subscribe((a) => (currentAlertsCache = a));
-  function getAlertsSnapshot(): typeof $alerts {
-    return currentAlertsCache;
-  }
-
-  let currentPricesCache: typeof $prices = {};
-  const unsubPricesCache = prices.subscribe((p) => (currentPricesCache = p));
-  function getPricesSnapshot(): typeof $prices {
-    return currentPricesCache;
-  }
-
-  let currentVolumesCache: typeof $volumes = {};
-  const unsubVolumesCache = volumes.subscribe((v) => (currentVolumesCache = v));
-  function getVolumesSnapshot(): typeof $volumes {
-    return currentVolumesCache;
-  }
-
-  let candlesByInterval: Record<CandleInterval, CandleMap> = Object.fromEntries(
-    CANDLE_INTERVALS.map((iv) => [iv, {}])
-  ) as Record<CandleInterval, CandleMap>;
-  const _candleUnsubs = CANDLE_INTERVALS.map((iv) =>
-    candleStores[iv].subscribe((map) => { candlesByInterval = { ...candlesByInterval, [iv]: map }; })
-  );
-
-  const unsubPriceEval = prices.subscribe(() => runEvaluation());
-  const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
+  // Bot client — connects to SharedWorker (or falls back to inline feeds).
+  // The worker owns all evaluation, logging, backfill, and notification logic.
+  // This component only mirrors feed broadcasts into tab-side stores for UI
+  // rendering, and relays alert CRUD events and notifications to/from the worker.
+  let botClient: BotClient | null = null;
+  let unsubBot: (() => void) | null = null;
 
   const handlePermission = async (): Promise<void> => {
     permission = await requestPermission();
@@ -160,13 +52,22 @@
       currentEnabledCache = enabled;
       return;
     }
-    const newAssets = enabled.filter((a) => !currentEnabledCache.includes(a));
     currentEnabledCache = enabled;
-    startFeeds(enabled);
-    if (newAssets.length > 0) void backfillAll(newAssets);
+    botClient?.post({ type: 'setEnabledAssets', assets: enabled });
     if (!enabled.includes(selectedAsset as AssetId)) {
       selectedAsset = MANDATORY_ASSET;
     }
+  });
+
+  // Relay tab-side alert mutations (add/remove) to the worker so its evaluation
+  // cache stays in sync. The worker does not receive storage events.
+  let alertsInitialised = false;
+  const unsubAlertsChanged = alerts.subscribe(() => {
+    if (!alertsInitialised) {
+      alertsInitialised = true;
+      return;
+    }
+    botClient?.post({ type: 'alertsChanged' });
   });
 
   onMount(() => {
@@ -180,23 +81,32 @@
     }
 
     mounted = true;
-    startFeeds(currentEnabledCache);
-    void backfillAll(currentEnabledCache);
+    botClient = createBotClient();
+    unsubBot = botClient.subscribe((msg: WorkerToTab) => {
+      switch (msg.type) {
+        case 'priceTick':
+          applyTick(msg.asset, msg.price, msg.receivedAt);
+          break;
+        case 'closedCandle':
+          if (msg.interval === '1m') applyCandle(msg.asset, msg.candle.baseVolume, msg.candle.closeTime);
+          applyClosedCandle(msg.interval, { asset: msg.asset, interval: msg.interval, ...msg.candle });
+          break;
+        case 'priceStatus':
+          status = msg.status;
+          break;
+        case 'notify':
+          notify(msg.title, msg.body);
+          break;
+      }
+    });
+    botClient.post({ type: 'setEnabledAssets', assets: currentEnabledCache });
   });
 
   onDestroy(() => {
-    unsubFeedStatus?.();
-    unsubFeedTick?.();
-    unsubFeedCandle?.();
-    unsubPriceEval();
-    unsubVolumeEval();
-    unsubAlertsCache();
-    unsubPricesCache();
-    unsubVolumesCache();
-    _candleUnsubs.forEach((u) => u());
+    unsubBot?.();
+    botClient?.destroy();
     unsubEnabled();
-    feed?.stop();
-    klineFeed?.stop();
+    unsubAlertsChanged();
   });
 </script>
 

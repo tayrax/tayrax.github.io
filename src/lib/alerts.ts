@@ -57,6 +57,24 @@ const store = writable<StoredAlert[]>(loadAlerts());
 
 export const alerts: Readable<StoredAlert[]> = { subscribe: store.subscribe };
 
+// Re-read from localStorage and update the in-memory store. Used when another
+// context (the SharedWorker, or another tab) has modified the alerts list and
+// we need to pick up the change.
+export const reloadAlerts = (): void => {
+  store.set(loadAlerts());
+};
+
+// Tab-side auto-sync: the SharedWorker writes markFired timestamps to
+// localStorage; this listener keeps the tab's alerts store in sync without
+// requiring an explicit message. SharedWorker contexts do not receive storage
+// events, so they rely on explicit refreshAlerts() calls instead.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key !== STORAGE_KEYS.alerts) return;
+    reloadAlerts();
+  });
+}
+
 const makeId = (): string =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 

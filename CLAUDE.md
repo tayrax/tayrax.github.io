@@ -44,26 +44,31 @@ tayrax/
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
 │   │   ├── backfill.ts       # Binance REST /api/v3/klines historical seed on startup
 │   │   ├── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
-│   │   └── enabled-assets.ts # enabledAssets store (persisted), toggleAsset(), grace-period pruning
+│   │   ├── enabled-assets.ts # enabledAssets store (persisted), toggleAsset(), grace-period pruning
+│   │   ├── bot-types.ts      # Shared message types between SharedWorker and tabs (WorkerToTab, TabToWorker, BotState)
+│   │   ├── bot.worker.ts     # SharedWorker: owns feed instances, broadcasts price/candle/status to all tabs
+│   │   └── bot-client.ts     # BotClient interface + SharedWorkerBotClient + FallbackBotClient + createBotClient()
 │   ├── components/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
-│   │   ├── NavMenu.svelte      # Clickable logo → dropdown nav (Dashboard / System / Logs)
+│   │   ├── NavMenu.svelte      # Clickable logo → dropdown nav (Dashboard / System / Logs / Bot)
 │   │   ├── CoinSelector.svelte # Checkbox list of SUPPORTED_ASSETS; bitcoin locked; calls toggleAsset
 │   │   └── Chart.svelte        # SVG candlestick chart with SMA/BB overlays + RSI/MACD sub-pane
-│   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
+│   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket + SharedWorker stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
 │   ├── App.svelte
 │   ├── System.svelte         # /system/ diagnostic page (browser caps + WS tests)
 │   ├── Logs.svelte           # /logs/ action-log viewer (reverse-chrono, filter, clear)
 │   ├── Help.svelte           # /help/ help page (how it works, warm-up notes)
+│   ├── Bot.svelte            # /bot/ bot console (feed status, errors, reconnect controls)
 │   ├── app.css
 │   ├── main.ts
 │   ├── system.ts             # Entry point for system/index.html
 │   ├── logs.ts               # Entry point for logs/index.html
-│   └── help.ts               # Entry point for help/index.html
+│   ├── help.ts               # Entry point for help/index.html
+│   └── bot.ts                # Entry point for bot/index.html
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
@@ -74,6 +79,7 @@ tayrax/
 ├── system/index.html         # Diagnostic page entry (multi-page Vite app) → /system/
 ├── logs/index.html           # Action-log page entry (multi-page Vite app) → /logs/
 ├── help/index.html           # Help page entry (multi-page Vite app) → /help/
+├── bot/index.html            # Bot console entry (multi-page Vite app) → /bot/
 ├── vite.config.ts            # publicDir: 'static', base: TAYRAX_CDN env var (falls back to / in prod, localhost:5173 in dev), rollupOptions.input for each page
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
@@ -161,6 +167,8 @@ CoinCap API key support is planned for a future version — do not implement it 
 - One responsibility per file — don't mix WebSocket logic with indicator math
 - Unit tests and component tests live alongside source files as `*.test.ts`. Framework: Vitest v2 (jsdom) for lib tests; `@testing-library/svelte` for component tests. Global setup in `src/test-setup.ts`; jest-dom type augmentation in `src/vitest-matchers.d.ts`.
 - jsdom has no `WebSocket`. Any test that renders `App.svelte` (or any component that calls `new WebSocket`) must stub it with `vi.stubGlobal('WebSocket', MockWebSocket)` in `beforeAll` and restore with `vi.unstubAllGlobals()` in `afterAll`. See `src/App.test.ts` for the reference implementation.
+- jsdom has no `SharedWorker`. Tests for `Bot.svelte` use two stubs: `vi.stubGlobal('SharedWorker', class {})` (so `typeof SharedWorker !== 'undefined'` is true) plus `vi.mock('./lib/bot-client', ...)` (so `createBotClient()` returns a controllable mock instead of trying to construct a real worker). Do NOT try to intercept `new SharedWorker(new URL(...))` directly from a `.ts` file — Vite transforms this pattern specially and `vi.stubGlobal` will not intercept it. See `src/Bot.test.ts` for the reference implementation.
+- `vi.mock()` factories are hoisted before class declarations in the test file body. Any variable referenced inside a `vi.mock` factory must be created with `vi.hoisted()`. See `src/lib/bot-client.test.ts` for the reference implementation using `vi.hoisted()` to capture feed instances.
 - Vite `define` globals (`__APP_VERSION__`, `__APP_BUILD__`, `__APP_CDN__`) are declared in `vite.config.ts` and typed in `src/vite-env.d.ts`. Vitest does **not** inherit `vite.config.ts` — the same globals must also be declared in the `define` block of `vitest.config.ts` (use neutral test values: version/build `'test'`, CDN `'/'`). Whenever a new `define` entry is added to `vite.config.ts`, add a matching entry to `vitest.config.ts` or tests that render any component using that global will throw `ReferenceError` at runtime.
 - Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
 
@@ -224,6 +232,7 @@ The build has two entry points defined in `vite.config.ts` via `rollupOptions.in
 | `system/index.html` | `/system/` | Diagnostic page: browser capabilities + live WebSocket tests |
 | `logs/index.html` | `/logs/` | Action-log viewer: reverse-chrono list of bot actions |
 | `help/index.html` | `/help/` | Help page: how it works, warm-up periods, badge meanings |
+| `bot/index.html` | `/bot/` | Bot console: feed statuses, errors, reconnect controls |
 
 All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Pages are navigable via the nav menu (NavMenu.svelte). When adding a new page, create its HTML file at `<name>/index.html` (project root level), register it in `vite.config.ts` under `rollupOptions.input`, and add its entry to the nav items in `NavMenu.svelte`. Page HTML files use absolute `/src/…` script paths so they resolve correctly from any subdirectory in both dev and build.
 
@@ -252,6 +261,7 @@ Rules:
 - **Indicator warm-up** — Indicators are null until their minimum candle counts are met: SMA(n) / BB(n) need n candles; RSI(14) needs 15; MACD(12,26,9) needs 34 (26 + 9 − 1). With a successful backfill these are met immediately at load time. Indicator-based alert rules return null (skip) when the required data isn't available yet — they do not fire false positives on insufficient history.
 - **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
 - **Disabled-asset grace period** — When a coin is toggled off, its `disabledAt` timestamp is stored under `STORAGE_KEYS.disabledAt`. Persisted price/candle data is kept for `DISABLED_ASSET_PRUNE_AFTER_MS` (3 days). On the next app startup after that window, `getExpiredDisabledAssets()` identifies expired entries and `pruneAssets` / `pruneCandles` / `pruneVolumes` / `clearExpiredDisabledAt` remove them. Re-enabling within 3 days recovers all history instantly without a new backfill.
+- **SharedWorker bot** — `src/lib/bot.worker.ts` is a SharedWorker that owns both WebSocket feed instances (`BinancePriceFeed`/`BinanceKlineFeed`). It stays alive as long as any tab from the origin is open, so feeds run even when navigating between pages. It broadcasts `priceTick`, `closedCandle`, `priceStatus`, `klineStatus`, and `botState` messages to all connected tab ports. It boots by reading `enabledAssets` from localStorage. Both `App.svelte` and `Bot.svelte` connect via `createBotClient()` in `src/lib/bot-client.ts`, which uses `SharedWorkerBotClient` when available or falls back to `FallbackBotClient` (inline feeds, same interface) for browsers without SharedWorker support (Safari < 16.4). Alert evaluation, proposal evaluation, backfill, and `logAction` remain in `App.svelte` (Svelte stores cannot run in a worker). The `/bot/` page calls `createBotClient()` synchronously in the `<script>` block (not in `onMount`) so it is immediately available on first render and testable without microtask flushing; it sends `subscribeBotState` to receive `botState` broadcasts. **Dev note:** SharedWorker HMR does not work — after changing `bot.worker.ts`, terminate the worker via Chrome DevTools → Application → Shared workers, then reload.
 
 ---
 
@@ -264,3 +274,4 @@ Rules:
 - Do not jump ahead to a later phase feature without finishing the current phase
 - Do not add dependencies without a clear reason — keep the bundle lean
 - Do not upgrade Vitest beyond v2.x — Vitest v3+ bundles its own Vite 6+, which conflicts with `@sveltejs/vite-plugin-svelte@3` (Svelte 4 / Vite 5) and produces deprecation warnings. Upgrade Vitest only when Svelte and Vite are also being upgraded.
+- Do not instantiate `BinancePriceFeed`, `BinanceKlineFeed`, or `PriceFeed` directly in `App.svelte` — feed lifecycle is owned by the SharedWorker. Use `botClient.post({ type: 'setEnabledAssets', assets })` to update the active asset set.
