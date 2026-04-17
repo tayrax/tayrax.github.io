@@ -6,6 +6,7 @@ import {
   SUPPORTED_ASSETS,
   MANDATORY_ASSET,
   DEFAULT_ENABLED_ASSETS,
+  MAX_ENABLED_ASSETS,
   DISABLED_ASSET_PRUNE_AFTER_MS,
   STORAGE_KEYS,
   type AssetId
@@ -95,7 +96,8 @@ export const toggleAsset = (asset: AssetId): void => {
       persistEnabled(next);
       return next;
     } else {
-      // Re-enabling: remove from disabled-at map
+      // Re-enabling: enforce cap before adding
+      if (current.length >= MAX_ENABLED_ASSETS) return current;
       delete map[asset];
       persistDisabledAt(map);
       const next = [...current, asset];

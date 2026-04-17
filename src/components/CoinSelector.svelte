@@ -1,13 +1,15 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { SUPPORTED_ASSETS, MANDATORY_ASSET } from '../lib/config';
+  import { SUPPORTED_ASSETS, MANDATORY_ASSET, MAX_ENABLED_ASSETS } from '../lib/config';
   import type { AssetId } from '../lib/config';
   import { enabledAssets, toggleAsset } from '../lib/enabled-assets';
 
   let query = '';
 
-  $: suggestions = query.trim() === ''
+  $: atLimit = $enabledAssets.length >= MAX_ENABLED_ASSETS;
+
+  $: suggestions = query.trim() === '' || atLimit
     ? []
     : SUPPORTED_ASSETS.filter(
         (a) => a !== MANDATORY_ASSET &&
@@ -16,6 +18,7 @@
       );
 
   function add(asset: AssetId): void {
+    if (atLimit) return;
     toggleAsset(asset);
     query = '';
   }
@@ -46,26 +49,30 @@
     {/each}
   </div>
 
-  <div class="search-row">
-    <input
-      type="text"
-      class="search-input"
-      placeholder="Add coin…"
-      bind:value={query}
-      on:keydown={handleKeydown}
-      autocomplete="off"
-      spellcheck="false"
-    />
-    {#if suggestions.length > 0}
-      <ul class="suggestions" role="listbox">
-        {#each suggestions as asset}
-          <li role="option" aria-selected="false">
-            <button type="button" on:click={() => add(asset)}>{asset}</button>
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </div>
+  {#if atLimit}
+    <p class="limit-msg">Max {MAX_ENABLED_ASSETS} coins enabled. Remove one to add another.</p>
+  {:else}
+    <div class="search-row">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Add coin…"
+        bind:value={query}
+        on:keydown={handleKeydown}
+        autocomplete="off"
+        spellcheck="false"
+      />
+      {#if suggestions.length > 0}
+        <ul class="suggestions" role="listbox">
+          {#each suggestions as asset}
+            <li role="option" aria-selected="false">
+              <button type="button" on:click={() => add(asset)}>{asset}</button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -124,6 +131,12 @@
   .remove-icon {
     font-size: 0.85rem;
     line-height: 1;
+  }
+
+  .limit-msg {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #666;
   }
 
   .search-row {

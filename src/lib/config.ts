@@ -60,6 +60,8 @@ export const MANDATORY_ASSET: AssetId = 'bitcoin';
 
 export const DEFAULT_ENABLED_ASSETS: AssetId[] = ['bitcoin'];
 
+export const MAX_ENABLED_ASSETS = 4;
+
 export const PRICE_PROVIDER: 'coincap' | 'binance' = 'binance';
 
 export const PRICE_HISTORY_WINDOW_MS = 60 * 60 * 1000;
