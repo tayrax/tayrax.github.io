@@ -78,7 +78,8 @@ describe('backfillAll', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     await backfillAll(['bitcoin', 'ethereum']);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    // 2 assets × 5 intervals (1m, 15m, 1h, 4h, 1d)
+    expect(mockFetch).toHaveBeenCalledTimes(10);
   });
 
   it('does not throw when one asset fetch fails', async () => {

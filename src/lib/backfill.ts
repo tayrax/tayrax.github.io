@@ -1,7 +1,7 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { CANDLE_HISTORY_MAX } from './config';
+import { CANDLE_HISTORY_MAX, CANDLE_INTERVALS, type CandleInterval } from './config';
 import { toBinanceSymbol } from './symbols';
 import type { OHLCVCandle } from './candles';
 import { prependCandles } from './candles';
@@ -52,7 +52,7 @@ const parseRow = (row: BinanceKlineRow): OHLCVCandle | null => {
 
 export const fetchKlines = async (
   asset: string,
-  interval = '1m',
+  interval: CandleInterval = '1m',
   limit = CANDLE_HISTORY_MAX
 ): Promise<OHLCVCandle[]> => {
   const symbol = toBinanceSymbol(asset);
@@ -69,15 +69,21 @@ export const fetchKlines = async (
   return out;
 };
 
+// Backfills all intervals for the given assets. Intervals are fetched sequentially
+// with a 300 ms gap between each to avoid hitting Binance rate limits.
 export const backfillAll = async (assets: readonly string[]): Promise<void> => {
-  await Promise.allSettled(
-    assets.map(async (asset) => {
-      try {
-        const historical = await fetchKlines(asset);
-        prependCandles(asset, historical);
-      } catch {
-        // Non-fatal: live stream will populate candles over time
-      }
-    })
-  );
+  for (let i = 0; i < CANDLE_INTERVALS.length; i++) {
+    if (i > 0) await new Promise<void>((r) => setTimeout(r, 300));
+    const interval = CANDLE_INTERVALS[i];
+    await Promise.allSettled(
+      assets.map(async (asset) => {
+        try {
+          const historical = await fetchKlines(asset, interval);
+          prependCandles(interval, asset, historical);
+        } catch {
+          // Non-fatal: live stream will populate candles over time
+        }
+      })
+    );
+  }
 };

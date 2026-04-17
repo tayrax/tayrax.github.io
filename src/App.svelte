@@ -17,7 +17,8 @@
   import { BinanceKlineFeed } from './lib/binance';
   import { applyTick, prices, pruneAssets } from './lib/prices';
   import { applyCandle, volumes, pruneVolumes } from './lib/volumes';
-  import { applyClosedCandle, candles, pruneCandles } from './lib/candles';
+  import { applyClosedCandle, candleStores, pruneCandles } from './lib/candles';
+  import type { CandleMap } from './lib/candles';
   import { backfillAll } from './lib/backfill';
   import { computeIndicators } from './lib/indicators';
   import { alerts, evaluate, markFired } from './lib/alerts';
@@ -66,8 +67,10 @@
       applyTick(asset, price, receivedAt);
     });
     unsubFeedCandle = klineFeed.onCandleClosed((candle) => {
-      applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
-      applyClosedCandle(candle);
+      if (candle.interval === '1m') {
+        applyCandle(candle.asset, candle.baseVolume, candle.closeTime);
+      }
+      applyClosedCandle(candle.interval, candle);
     });
 
     feed.start();
@@ -133,9 +136,9 @@
     return currentVolumesCache;
   }
 
-  let currentCandlesCache: typeof $candles = {};
-  const unsubCandlesCache = candles.subscribe((c) => (currentCandlesCache = c));
-  function getCandlesSnapshot(): typeof $candles {
+  let currentCandlesCache: CandleMap = {};
+  const unsubCandlesCache = candleStores['1m'].subscribe((c) => (currentCandlesCache = c));
+  function getCandlesSnapshot(): CandleMap {
     return currentCandlesCache;
   }
 

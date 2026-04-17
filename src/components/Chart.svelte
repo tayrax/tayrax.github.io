@@ -1,11 +1,24 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { candles } from '../lib/candles';
+  import { onDestroy } from 'svelte';
+  import { candleStores } from '../lib/candles';
+  import { CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from '../lib/config';
   import { sma, rsi, macd, bollingerBands } from '../lib/indicators';
-  import type { OHLCVCandle } from '../lib/candles';
+  import type { OHLCVCandle, CandleMap } from '../lib/candles';
 
   export let asset: string;
+
+  let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
+
+  let candleMaps: Record<CandleInterval, CandleMap> = Object.fromEntries(
+    CANDLE_INTERVALS.map((iv) => [iv, {}])
+  ) as Record<CandleInterval, CandleMap>;
+
+  const _unsubs = CANDLE_INTERVALS.map((iv) =>
+    candleStores[iv].subscribe((map) => { candleMaps = { ...candleMaps, [iv]: map }; })
+  );
+  onDestroy(() => _unsubs.forEach((u) => u()));
 
   // Number of candles to display in the visible window
   const VISIBLE = 60;
@@ -19,7 +32,7 @@
   type SubPane = 'rsi' | 'macd';
   let subPane: SubPane = 'rsi';
 
-  $: assetCandles = $candles[asset] ?? [];
+  $: assetCandles = candleMaps[selectedInterval][asset] ?? [];
   $: visible = assetCandles.slice(-VISIBLE);
 
   // --- price scale helpers ---
@@ -188,6 +201,15 @@
   <div class="chart-header">
     <span class="asset-label">{asset}</span>
     <div class="controls">
+      {#each CANDLE_INTERVALS as iv}
+        <button
+          class="pane-btn"
+          class:active={selectedInterval === iv}
+          on:click={() => (selectedInterval = iv)}
+          type="button"
+        >{iv}</button>
+      {/each}
+      <span class="sep"></span>
       <button
         class="pane-btn"
         class:active={subPane === 'rsi'}
@@ -418,7 +440,8 @@
     color: #888;
     font-weight: 600;
   }
-  .controls { display: flex; gap: 0.3rem; }
+  .controls { display: flex; gap: 0.3rem; align-items: center; }
+  .sep { width: 1px; height: 1rem; background: #333; margin: 0 0.15rem; }
   .pane-btn {
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;

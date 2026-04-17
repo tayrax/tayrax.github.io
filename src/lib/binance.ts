@@ -1,10 +1,12 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
+import { CANDLE_INTERVALS, type CandleInterval } from './config';
 import { toBinanceSymbol, fromBinanceSymbol } from './symbols';
 
 export type ClosedCandle = {
   asset: string;
+  interval: CandleInterval;
   openTime: number;
   closeTime: number;
   open: number;
@@ -45,7 +47,7 @@ export class BinanceKlineFeed {
   private stopped = true;
   private connectedAt: number | null = null;
 
-  constructor(private assets: readonly string[], private interval: string = '1m') {}
+  constructor(private assets: readonly string[], private intervals: CandleInterval[] = CANDLE_INTERVALS) {}
 
   start(): void {
     this.stopped = false;
@@ -75,10 +77,14 @@ export class BinanceKlineFeed {
 
   private connect(): void {
     if (this.stopped) return;
-    const streams = this.assets
-      .map((a) => toBinanceSymbol(a))
-      .filter((s): s is string => s !== null)
-      .map((s) => `${s.toLowerCase()}@kline_${this.interval}`);
+    const streams: string[] = [];
+    for (const asset of this.assets) {
+      const symbol = toBinanceSymbol(asset);
+      if (!symbol) continue;
+      for (const interval of this.intervals) {
+        streams.push(`${symbol.toLowerCase()}@kline_${interval}`);
+      }
+    }
     if (streams.length === 0) return;
     const url = `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
     const ws = new WebSocket(url);
@@ -98,6 +104,8 @@ export class BinanceKlineFeed {
       if (!k || !k.x) return;
       const asset = fromBinanceSymbol(k.s);
       if (!asset) return;
+      const interval = k.i as CandleInterval;
+      if (!this.intervals.includes(interval)) return;
       const open = Number(k.o);
       const high = Number(k.h);
       const low = Number(k.l);
@@ -112,6 +120,7 @@ export class BinanceKlineFeed {
       ) return;
       const candle: ClosedCandle = {
         asset,
+        interval,
         openTime: k.t,
         closeTime: k.T,
         open,
