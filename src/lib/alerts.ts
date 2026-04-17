@@ -2,21 +2,21 @@
 // See LICENSE file.
 
 import { writable, type Readable } from 'svelte/store';
-import { ALERT_COOLDOWN_MS, STORAGE_KEYS } from './config';
+import { ALERT_COOLDOWN_MS, STORAGE_KEYS, type CandleInterval } from './config';
 import { pctChangeOverWindow, type PriceState } from './prices';
 import { volumeSpikeRatio, type VolumeState } from './volumes';
 import type { IndicatorValues } from './indicators';
 
 export type AlertRule =
-  | { id: string; asset: string; kind: 'above'; value: number }
-  | { id: string; asset: string; kind: 'below'; value: number }
-  | { id: string; asset: string; kind: 'range'; low: number; high: number }
-  | { id: string; asset: string; kind: 'pctChange'; value: number }
-  | { id: string; asset: string; kind: 'volumeSpike'; multiplier: number }
-  | { id: string; asset: string; kind: 'rsiBelow'; value: number }
-  | { id: string; asset: string; kind: 'rsiAbove'; value: number }
-  | { id: string; asset: string; kind: 'macdCross'; direction: 'bullish' | 'bearish' }
-  | { id: string; asset: string; kind: 'bbBreakout'; direction: 'above' | 'below' };
+  | { id: string; asset: string; interval: CandleInterval; kind: 'above'; value: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'below'; value: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'range'; low: number; high: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'pctChange'; value: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'volumeSpike'; multiplier: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'rsiBelow'; value: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'rsiAbove'; value: number }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'macdCross'; direction: 'bullish' | 'bearish' }
+  | { id: string; asset: string; interval: CandleInterval; kind: 'bbBreakout'; direction: 'above' | 'below' };
 
 export type StoredAlert = AlertRule & { lastFiredAt: number | null };
 
@@ -32,7 +32,13 @@ const loadAlerts = (): StoredAlert[] => {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as StoredPayload;
     if (parsed?.version !== 1 || !Array.isArray(parsed.alerts)) return [];
-    return parsed.alerts;
+    // Migrate: add interval:'1m' to any alert stored before this field existed
+    return parsed.alerts.map((a): StoredAlert => {
+      if (!('interval' in a)) {
+        return { ...(a as Record<string, unknown>), interval: '1m' as CandleInterval } as StoredAlert;
+      }
+      return a;
+    });
   } catch {
     return [];
   }
@@ -78,6 +84,8 @@ export const markFired = (id: string, at: number): void => {
     return out;
   });
 };
+
+export const getAlertInterval = (alert: StoredAlert): CandleInterval => alert.interval;
 
 export type Evaluation = { alert: StoredAlert; message: string };
 

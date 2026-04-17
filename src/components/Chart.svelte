@@ -8,8 +8,7 @@
   import type { OHLCVCandle, CandleMap } from '../lib/candles';
 
   export let asset: string;
-
-  let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
+  export let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
 
   let candleMaps: Record<CandleInterval, CandleMap> = Object.fromEntries(
     CANDLE_INTERVALS.map((iv) => [iv, {}])

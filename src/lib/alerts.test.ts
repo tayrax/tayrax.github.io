@@ -190,7 +190,7 @@ describe('evaluate — volumeSpike', () => {
 // evaluate — rsiBelow / rsiAbove
 // ---------------------------------------------------------------------------
 describe('evaluate — rsiBelow', () => {
-  const alert = makeAlert({ kind: 'rsiBelow', value: 30 } as StoredAlert);
+  const alert = makeAlert({ kind: 'rsiBelow', value: 30, interval: '1m' } as StoredAlert);
   const now = Date.now();
 
   it('fires when RSI is below the threshold', () => {
@@ -219,7 +219,7 @@ describe('evaluate — rsiBelow', () => {
 });
 
 describe('evaluate — rsiAbove', () => {
-  const alert = makeAlert({ kind: 'rsiAbove', value: 70 } as StoredAlert);
+  const alert = makeAlert({ kind: 'rsiAbove', value: 70, interval: '1m' } as StoredAlert);
   const now = Date.now();
 
   it('fires when RSI is above the threshold', () => {
@@ -237,8 +237,8 @@ describe('evaluate — rsiAbove', () => {
 // evaluate — macdCross
 // ---------------------------------------------------------------------------
 describe('evaluate — macdCross', () => {
-  const bullishAlert = makeAlert({ kind: 'macdCross', direction: 'bullish' } as StoredAlert);
-  const bearishAlert = makeAlert({ kind: 'macdCross', direction: 'bearish' } as StoredAlert);
+  const bullishAlert = makeAlert({ kind: 'macdCross', direction: 'bullish', interval: '1m' } as StoredAlert);
+  const bearishAlert = makeAlert({ kind: 'macdCross', direction: 'bearish', interval: '1m' } as StoredAlert);
   const now = Date.now();
 
   const macdCtx = (histogram: number): EvalContext => ({
@@ -277,8 +277,8 @@ describe('evaluate — macdCross', () => {
 // evaluate — bbBreakout
 // ---------------------------------------------------------------------------
 describe('evaluate — bbBreakout', () => {
-  const aboveAlert = makeAlert({ kind: 'bbBreakout', direction: 'above' } as StoredAlert);
-  const belowAlert = makeAlert({ kind: 'bbBreakout', direction: 'below' } as StoredAlert);
+  const aboveAlert = makeAlert({ kind: 'bbBreakout', direction: 'above', interval: '1m' } as StoredAlert);
+  const belowAlert = makeAlert({ kind: 'bbBreakout', direction: 'below', interval: '1m' } as StoredAlert);
   const now = Date.now();
 
   const bbCtx = (price: number): EvalContext => ({
@@ -329,7 +329,7 @@ describe('evaluate — bbBreakout', () => {
 describe('alert store', () => {
   it('addAlert appends a new alert with a generated id', () => {
     const before = get(alerts).length;
-    addAlert({ asset: 'bitcoin', kind: 'above', value: 100_000 });
+    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 100_000 });
     const after = get(alerts);
     expect(after.length).toBe(before + 1);
     const added = after[after.length - 1];
@@ -338,7 +338,7 @@ describe('alert store', () => {
   });
 
   it('removeAlert deletes the alert by id', () => {
-    addAlert({ asset: 'ethereum', kind: 'below', value: 1000 });
+    addAlert({ asset: 'ethereum', interval: '1m', kind: 'below', value: 1000 });
     const all = get(alerts);
     const target = all[all.length - 1];
     removeAlert(target.id);
@@ -346,7 +346,7 @@ describe('alert store', () => {
   });
 
   it('markFired sets lastFiredAt on the matching alert', () => {
-    addAlert({ asset: 'solana', kind: 'pctChange', value: 10 });
+    addAlert({ asset: 'solana', interval: '1m', kind: 'pctChange', value: 10 });
     const before = get(alerts);
     const target = before[before.length - 1];
     const ts = Date.now();

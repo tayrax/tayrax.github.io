@@ -2,6 +2,11 @@
 <!-- See LICENSE file. -->
 <script lang="ts">
   import { alerts, removeAlert, type StoredAlert } from '../lib/alerts';
+  import { DEFAULT_CHART_INTERVAL, type CandleInterval } from '../lib/config';
+
+  export let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
+
+  $: visibleAlerts = $alerts.filter((a) => a.interval === selectedInterval);
 
   const describe = (a: StoredAlert): string => {
     switch (a.kind) {
@@ -10,19 +15,19 @@
       case 'range': return `${a.asset} in $${a.low}–$${a.high}`;
       case 'pctChange': return `${a.asset} |Δ| ≥ ${a.value}% /1h`;
       case 'volumeSpike': return `${a.asset} volume ≥ ${a.multiplier}× median /1m`;
-      case 'rsiBelow': return `${a.asset} RSI(14) < ${a.value}`;
-      case 'rsiAbove': return `${a.asset} RSI(14) > ${a.value}`;
-      case 'macdCross': return `${a.asset} MACD ${a.direction} crossover`;
-      case 'bbBreakout': return `${a.asset} BB breakout ${a.direction} band`;
+      case 'rsiBelow': return `${a.asset} RSI(14) < ${a.value} · ${a.interval}`;
+      case 'rsiAbove': return `${a.asset} RSI(14) > ${a.value} · ${a.interval}`;
+      case 'macdCross': return `${a.asset} MACD ${a.direction} crossover · ${a.interval}`;
+      case 'bbBreakout': return `${a.asset} BB breakout ${a.direction} band · ${a.interval}`;
     }
   };
 </script>
 
-{#if $alerts.length === 0}
-  <p class="muted">No alerts yet. Add one above.</p>
+{#if visibleAlerts.length === 0}
+  <p class="muted">{$alerts.length === 0 ? 'No alerts yet. Add one above.' : `No alerts for ${selectedInterval}.`}</p>
 {:else}
   <ul>
-    {#each $alerts as a (a.id)}
+    {#each visibleAlerts as a (a.id)}
       <li>
         <span>{describe(a)}</span>
         {#if a.lastFiredAt}

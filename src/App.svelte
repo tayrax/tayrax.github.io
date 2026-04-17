@@ -8,7 +8,7 @@
   import NavMenu from './components/NavMenu.svelte';
   import Chart from './components/Chart.svelte';
   import CoinSelector from './components/CoinSelector.svelte';
-  import { MANDATORY_ASSET, PRICE_PROVIDER } from './lib/config';
+  import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
   import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
   import type { PriceFeedStatus, PriceProvider } from './lib/provider';
@@ -21,7 +21,7 @@
   import type { CandleMap } from './lib/candles';
   import { backfillAll } from './lib/backfill';
   import { computeIndicators } from './lib/indicators';
-  import { alerts, evaluate, markFired } from './lib/alerts';
+  import { alerts, evaluate, markFired, getAlertInterval } from './lib/alerts';
   import { evaluateProposals } from './lib/proposals';
   import { logAction } from './lib/logs';
   import {
@@ -81,11 +81,11 @@
     const now = Date.now();
     const priceMap = getPricesSnapshot();
     const volumeMap = getVolumesSnapshot();
-    const candleMap = getCandlesSnapshot();
     const enabled = new Set(currentEnabledCache);
     for (const alert of getAlertsSnapshot()) {
       if (!enabled.has(alert.asset as AssetId)) continue;
-      const assetCandles = candleMap[alert.asset] ?? [];
+      const alertInterval = getAlertInterval(alert);
+      const assetCandles = candlesByInterval[alertInterval][alert.asset] ?? [];
       const indicators = assetCandles.length > 0 ? computeIndicators(assetCandles) : undefined;
       const hit = evaluate(
         alert,
@@ -103,7 +103,7 @@
       });
     }
     for (const asset of enabled) {
-      const assetCandles = candleMap[asset] ?? [];
+      const assetCandles = candlesByInterval['1m'][asset] ?? [];
       if (assetCandles.length === 0) continue;
       const indicators = computeIndicators(assetCandles);
       const proposals = evaluateProposals(asset, indicators, priceMap[asset], now);
@@ -136,11 +136,12 @@
     return currentVolumesCache;
   }
 
-  let currentCandlesCache: CandleMap = {};
-  const unsubCandlesCache = candleStores['1m'].subscribe((c) => (currentCandlesCache = c));
-  function getCandlesSnapshot(): CandleMap {
-    return currentCandlesCache;
-  }
+  let candlesByInterval: Record<CandleInterval, CandleMap> = Object.fromEntries(
+    CANDLE_INTERVALS.map((iv) => [iv, {}])
+  ) as Record<CandleInterval, CandleMap>;
+  const _candleUnsubs = CANDLE_INTERVALS.map((iv) =>
+    candleStores[iv].subscribe((map) => { candlesByInterval = { ...candlesByInterval, [iv]: map }; })
+  );
 
   const unsubPriceEval = prices.subscribe(() => runEvaluation());
   const unsubVolumeEval = volumes.subscribe(() => runEvaluation());
@@ -150,6 +151,7 @@
   };
 
   let selectedAsset: string = MANDATORY_ASSET;
+  let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
 
   const unsubEnabled = enabledAssets.subscribe((enabled) => {
     if (!mounted) {
@@ -189,7 +191,7 @@
     unsubAlertsCache();
     unsubPricesCache();
     unsubVolumesCache();
-    unsubCandlesCache();
+    _candleUnsubs.forEach((u) => u());
     unsubEnabled();
     feed?.stop();
     klineFeed?.stop();
@@ -245,13 +247,13 @@
 
   <section class="charts">
     <h2>Charts</h2>
-    <Chart asset={selectedAsset} />
+    <Chart asset={selectedAsset} bind:selectedInterval />
   </section>
 
   <section>
     <h2>Alerts</h2>
-    <AlertForm />
-    <div class="list"><AlertList /></div>
+    <AlertForm {selectedInterval} />
+    <div class="list"><AlertList {selectedInterval} /></div>
   </section>
 </main>
 

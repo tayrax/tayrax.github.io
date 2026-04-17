@@ -1,13 +1,21 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { MANDATORY_ASSET } from '../lib/config';
+  import { MANDATORY_ASSET, DEFAULT_CHART_INTERVAL, type CandleInterval } from '../lib/config';
   import type { AssetId } from '../lib/config';
   import { enabledAssets } from '../lib/enabled-assets';
   import { addAlert, type AlertKind } from '../lib/alerts';
 
+  export let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
+
+  const PRICE_KINDS = new Set<AlertKind>(['above', 'below', 'range', 'pctChange', 'volumeSpike']);
+
   let asset: string = MANDATORY_ASSET;
   let kind: AlertKind = 'above';
+  let alertInterval: CandleInterval = selectedInterval;
+  $: alertInterval = selectedInterval;
+  // Reset to first indicator kind if interval moves away from 1m while a price kind is selected
+  $: if (alertInterval !== '1m' && PRICE_KINDS.has(kind)) kind = 'rsiBelow';
   let value = '';
   let low = '';
   let high = '';
@@ -38,41 +46,41 @@
         error = 'Provide low < high';
         return;
       }
-      addAlert({ asset, kind: 'range', low: l, high: h });
+      addAlert({ asset, interval: alertInterval, kind: 'range', low: l, high: h });
     } else if (kind === 'volumeSpike') {
       const m = Number(multiplier);
       if (!Number.isFinite(m) || m <= 1) {
         error = 'Multiplier must be > 1';
         return;
       }
-      addAlert({ asset, kind: 'volumeSpike', multiplier: m });
+      addAlert({ asset, interval: alertInterval, kind: 'volumeSpike', multiplier: m });
     } else if (kind === 'rsiBelow') {
       const v = Number(value);
       if (!Number.isFinite(v) || v <= 0 || v >= 100) {
         error = 'RSI threshold must be 1–99';
         return;
       }
-      addAlert({ asset, kind: 'rsiBelow', value: v });
+      addAlert({ asset, interval: alertInterval, kind: 'rsiBelow', value: v });
     } else if (kind === 'rsiAbove') {
       const v = Number(value);
       if (!Number.isFinite(v) || v <= 0 || v >= 100) {
         error = 'RSI threshold must be 1–99';
         return;
       }
-      addAlert({ asset, kind: 'rsiAbove', value: v });
+      addAlert({ asset, interval: alertInterval, kind: 'rsiAbove', value: v });
     } else if (kind === 'macdCross') {
-      addAlert({ asset, kind: 'macdCross', direction: macdDirection });
+      addAlert({ asset, interval: alertInterval, kind: 'macdCross', direction: macdDirection });
     } else if (kind === 'bbBreakout') {
-      addAlert({ asset, kind: 'bbBreakout', direction: bbDirection });
+      addAlert({ asset, interval: alertInterval, kind: 'bbBreakout', direction: bbDirection });
     } else {
       const v = Number(value);
       if (!Number.isFinite(v)) {
         error = 'Enter a number';
         return;
       }
-      if (kind === 'above') addAlert({ asset, kind: 'above', value: v });
-      else if (kind === 'below') addAlert({ asset, kind: 'below', value: v });
-      else addAlert({ asset, kind: 'pctChange', value: v });
+      if (kind === 'above') addAlert({ asset, interval: alertInterval, kind: 'above', value: v });
+      else if (kind === 'below') addAlert({ asset, interval: alertInterval, kind: 'below', value: v });
+      else addAlert({ asset, interval: alertInterval, kind: 'pctChange', value: v });
     }
     reset();
   };
@@ -87,16 +95,22 @@
       {/each}
     </select>
   </label>
+  <div class="interval-badge" title="Interval is set by the chart selection">
+    <span class="interval-label">Interval</span>
+    <span class="interval-value">{alertInterval}</span>
+  </div>
   <label>
     Rule
     <select bind:value={kind}>
-      <optgroup label="Price">
-        <option value="above">price above</option>
-        <option value="below">price below</option>
-        <option value="range">price in range</option>
-        <option value="pctChange">% change /1h</option>
-        <option value="volumeSpike">volume spike /1m</option>
-      </optgroup>
+      {#if alertInterval === '1m'}
+        <optgroup label="Price">
+          <option value="above">price above</option>
+          <option value="below">price below</option>
+          <option value="range">price in range</option>
+          <option value="pctChange">% change /1h</option>
+          <option value="volumeSpike">volume spike /1m</option>
+        </optgroup>
+      {/if}
       <optgroup label="Indicators">
         <option value="rsiBelow">RSI below (oversold)</option>
         <option value="rsiAbove">RSI above (overbought)</option>
@@ -181,4 +195,23 @@
   }
   button:hover { background: #1d4ed8; }
   .err { color: #f87171; font-size: 0.85rem; }
+  .interval-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #aaa;
+  }
+  .interval-label { color: #aaa; }
+  .interval-value {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    color: #666;
+    font-family: inherit;
+    font-size: inherit;
+    min-width: 3rem;
+    text-align: center;
+  }
 </style>
