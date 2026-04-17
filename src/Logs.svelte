@@ -81,6 +81,9 @@
             <div class="log-main">
               <span class="ts">{formatTs(entry.ts)}</span>
               <span class="kind-badge kind-{entry.kind}">{KIND_LABEL[entry.kind]}</span>
+              {#if entry.kind === 'tradeProposed' && entry.data?.interval}
+                <span class="interval-badge">{entry.data.interval}</span>
+              {/if}
               {#if entry.kind === 'tradeProposed' && entry.data?.direction === 'buy'}
                 <span class="direction-badge direction-buy">buy</span>
               {:else if entry.kind === 'tradeProposed' && entry.data?.direction === 'sell'}
@@ -228,6 +231,17 @@
   }
   .kind-alertDispatched { background: #1e3a5f; color: #93c5fd; }
   .kind-tradeProposed { background: #2d2200; color: #fbbf24; }
+
+  .interval-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    background: #1a2a1a;
+    color: #86efac;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: nowrap;
+  }
 
   .direction-badge {
     display: inline-block;

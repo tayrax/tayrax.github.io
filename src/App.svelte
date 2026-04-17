@@ -102,18 +102,20 @@
         data: { alertId: alert.id, alertKind: alert.kind }
       });
     }
-    for (const asset of enabled) {
-      const assetCandles = candlesByInterval['1m'][asset] ?? [];
-      if (assetCandles.length === 0) continue;
-      const indicators = computeIndicators(assetCandles);
-      const proposals = evaluateProposals(asset, indicators, priceMap[asset], now);
-      for (const p of proposals) {
-        logAction({
-          kind: 'tradeProposed',
-          asset: p.asset,
-          message: p.message,
-          data: { signal: p.signal, direction: p.direction, indicatorValue: p.indicatorValue, price: p.price }
-        });
+    for (const interval of CANDLE_INTERVALS) {
+      for (const asset of enabled) {
+        const assetCandles = candlesByInterval[interval][asset] ?? [];
+        if (assetCandles.length === 0) continue;
+        const indicators = computeIndicators(assetCandles);
+        const proposals = evaluateProposals(asset, interval, indicators, priceMap[asset], now);
+        for (const p of proposals) {
+          logAction({
+            kind: 'tradeProposed',
+            asset: p.asset,
+            message: p.message,
+            data: { interval: p.interval, signal: p.signal, direction: p.direction, indicatorValue: p.indicatorValue, price: p.price }
+          });
+        }
       }
     }
   };
