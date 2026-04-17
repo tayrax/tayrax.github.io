@@ -8,23 +8,19 @@
   import type { BotState } from './lib/bot-types';
 
   let state: BotState | null = null;
-  const supported = typeof SharedWorker !== 'undefined';
 
-  let botClient: BotClient | null = null;
-  if (supported) {
-    botClient = createBotClient();
-    botClient.subscribe((msg) => {
-      if (msg.type === 'botState') state = msg.state;
-    });
-    botClient.post({ type: 'subscribeBotState' });
-  }
+  const botClient: BotClient = createBotClient();
+  botClient.subscribe((msg) => {
+    if (msg.type === 'botState') state = msg.state;
+  });
+  botClient.post({ type: 'subscribeBotState' });
 
   onDestroy(() => {
-    botClient?.destroy();
+    botClient.destroy();
   });
 
   function reconnect(feed: 'price' | 'kline'): void {
-    botClient?.post({ type: 'reconnect', feed });
+    botClient.post({ type: 'reconnect', feed });
   }
 
   function formatTime(ms: number | undefined): string {
@@ -43,14 +39,7 @@
 </header>
 
 <main>
-  {#if !supported}
-    <section>
-      <div class="unsupported">
-        SharedWorker is not supported in this browser.
-        The bot console requires a modern browser (Chrome, Firefox, Edge, or Safari 16.4+).
-      </div>
-    </section>
-  {:else if state === null}
+  {#if state === null}
     <section>
       <div class="loading">Connecting to bot worker…</div>
     </section>
@@ -229,7 +218,7 @@
   .err-time  { color: #555; min-width: 6rem; }
   .err-msg   { color: #999; }
 
-  .unsupported, .loading, .hint {
+  .loading, .hint {
     font-size: 0.85rem;
     color: #666;
     padding: 0.5rem 0;

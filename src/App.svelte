@@ -33,7 +33,7 @@
   let mounted = false;
   let currentEnabledCache: AssetId[] = [];
 
-  // Bot client — connects to SharedWorker (or falls back to inline feeds).
+  // Bot client — connects to the SharedWorker.
   // The worker owns all evaluation, logging, backfill, and notification logic.
   // This component only mirrors feed broadcasts into tab-side stores for UI
   // rendering, and relays alert CRUD events and notifications to/from the worker.

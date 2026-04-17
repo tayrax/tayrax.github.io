@@ -1,7 +1,7 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { vi, describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import { render, act } from '@testing-library/svelte';
 import Bot from './Bot.svelte';
 import type { BotState, WorkerToTab } from './lib/bot-types';
@@ -27,13 +27,7 @@ const botMock = vi.hoisted(() => ({
   },
 }));
 
-// ---------------------------------------------------------------------------
-// Stub SharedWorker so `typeof SharedWorker !== 'undefined'` is true in jsdom.
-// createBotClient is mocked below so the stub never actually constructs a worker.
-// ---------------------------------------------------------------------------
-beforeAll(() => { vi.stubGlobal('SharedWorker', class {}); });
-afterAll(() => vi.unstubAllGlobals());
-
+// createBotClient is mocked so no real worker is constructed.
 vi.mock('./lib/bot-client', () => ({
   createBotClient: () => ({
     post(msg: TabToWorker): void { botMock.postMessages.push(msg); },
@@ -68,7 +62,7 @@ async function pushBotState(state: BotState): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Rendering — initial state (SharedWorker available, no state yet)
+// Rendering — initial state (no botState received yet)
 // ---------------------------------------------------------------------------
 describe('Bot — initial state', () => {
   it('shows connecting message before first botState arrives', async () => {
@@ -152,19 +146,6 @@ describe('Bot — with botState', () => {
     await act();
     await pushBotState(makeState({ enabledAssets: [] }));
     expect(getByText(/No assets enabled/i)).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Rendering — not supported
-// ---------------------------------------------------------------------------
-describe('Bot — SharedWorker not supported', () => {
-  it('shows not-supported message when SharedWorker is unavailable', () => {
-    vi.stubGlobal('SharedWorker', undefined);
-    const { getByText } = render(Bot);
-    expect(getByText(/SharedWorker is not supported/i)).toBeInTheDocument();
-    vi.unstubAllGlobals();
-    vi.stubGlobal('SharedWorker', class {}); // restore for remaining tests
   });
 });
 
