@@ -33,12 +33,12 @@ tayrax/
 │   │   ├── provider.ts       # PriceProvider interface + shared types (PriceTick, etc.)
 │   │   ├── websocket.ts      # CoinCap price WebSocket (PriceFeed implements PriceProvider)
 │   │   ├── binance-price.ts  # Binance miniTicker price WebSocket (BinancePriceFeed)
-│   │   ├── binance.ts        # Binance 1m kline WebSocket (BinanceKlineFeed)
+│   │   ├── binance.ts        # Binance multi-interval kline WebSocket (BinanceKlineFeed — all CandleIntervals on one combined stream)
 │   │   ├── symbols.ts        # CoinCap id ↔ Binance symbol mapping
 │   │   ├── prices.ts         # Price store + 1h rolling history + snapshot cache
 │   │   ├── volumes.ts        # Volume store + volumeSpikeRatio
 │   │   ├── alerts.ts         # Alert rule types, store, evaluate() — Phase 1 + indicator rules (Phase 2)
-│   │   ├── proposals.ts      # Trade proposal types, evaluateProposals(), per-signal cooldown (Phase 3)
+│   │   ├── proposals.ts      # Trade proposal types, evaluateProposals(asset, interval, …), per-asset+interval+signal cooldown (Phase 3)
 │   │   ├── notifications.ts  # Web Notifications API wrapper
 │   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
@@ -237,7 +237,7 @@ Rules:
 - Call `logAction` at the point where the action is taken, not after the fact.
 - Every new action kind requires a new entry in the `LogKind` union in `src/lib/logs.ts`. The TypeScript compiler will then flag every render site that is missing a case (e.g. `KIND_LABEL` in `Logs.svelte`) — fix all flagged sites before committing.
 - Do not log routine data updates (price ticks, candle closes) — only log discrete decisions or outputs the user would care to audit.
-- Trade proposals (`tradeProposed`) are generated in `src/lib/proposals.ts` and logged via `logAction`. They are driven by indicator signals (RSI, MACD, BB) and subject to `PROPOSAL_COOLDOWN_MS` per asset per signal to avoid flooding the log.
+- Trade proposals (`tradeProposed`) are generated in `src/lib/proposals.ts` and logged via `logAction`. They are driven by indicator signals (RSI, MACD, BB) evaluated across all `CANDLE_INTERVALS`, and subject to `PROPOSAL_COOLDOWN_MS` per asset+interval+signal to avoid flooding the log. The `interval` is included in the log entry's `data` field and displayed as a badge in `Logs.svelte`.
 
 ---
 
@@ -247,7 +247,7 @@ Rules:
 - **CoinCap tick throttle** — `applyTick` in `prices.ts` silently drops ticks that arrive within `PRICE_TICK_MIN_INTERVAL_MS` (default 5s) of the last accepted tick for the same asset. The first tick for a new asset always passes. Tune the constant in `config.ts`; don't lower it below 1s without a clear reason.
 - **WebSocket reconnect backoff** — `reconnectAttempts` is only reset when a connection has been open for ≥10 s (`STABLE_CONNECTION_MS` in `websocket.ts`, `binance-price.ts`, and `binance.ts`). This prevents the backoff from being nullified when a server accepts the handshake but then immediately closes the connection (e.g. Origin rejection from a new deploy domain).
 - **Action log ring buffer** — `logAction` in `src/lib/logs.ts` caps the stored entry list at `LOG_MAX_ENTRIES` (500, in `config.ts`). New entries are prepended so the store is always reverse-chronological. Persisted under `STORAGE_KEYS.logs` (`tayrax.logs.v1`); open tabs stay in sync via a module-level `storage` event listener. When adding a new action type, extend the `LogKind` union in `logs.ts` — the compiler will then flag every render site that hasn't been updated (e.g. `KIND_LABEL` in `Logs.svelte`).
-- **Multi-interval candle stores** — `candleStores` in `src/lib/candles.ts` is a `Record<CandleInterval, Readable<CandleMap>>` with one independent Svelte store per interval (`1m`, `15m`, `1h`, `4h`, `1d`). Each store has its own `localStorage` key (see `CANDLE_STORAGE_KEYS` in `config.ts`). `applyClosedCandle(interval, candle)`, `prependCandles(interval, asset, historical)`, and `pruneCandles(toRemove)` (which prunes all intervals) are the public API. Alerts and proposals currently use the `1m` store. The chart has a per-component interval selector.
+- **Multi-interval candle stores** — `candleStores` in `src/lib/candles.ts` is a `Record<CandleInterval, Readable<CandleMap>>` with one independent Svelte store per interval (`1m`, `15m`, `1h`, `4h`, `1d`). Each store has its own `localStorage` key (see `CANDLE_STORAGE_KEYS` in `config.ts`). `applyClosedCandle(interval, candle)`, `prependCandles(interval, asset, historical)`, and `pruneCandles(toRemove)` (which prunes all intervals) are the public API. Alerts use the candle store for their own `interval` field. Proposals are evaluated across all intervals (`CANDLE_INTERVALS` loop in `App.svelte`). The chart has a per-component interval selector.
 - **Candle history backfill** — On startup `backfillAll` in `src/lib/backfill.ts` fetches up to `CANDLE_HISTORY_MAX` (200) candles per asset per interval from the Binance REST API, iterating intervals sequentially with a 300 ms gap between each to avoid rate-limit issues. Failures are swallowed. Live candles (from `BinanceKlineFeed`) always win over historical candles when the same `openTime` exists.
 - **Indicator warm-up** — Indicators are null until their minimum candle counts are met: SMA(n) / BB(n) need n candles; RSI(14) needs 15; MACD(12,26,9) needs 34 (26 + 9 − 1). With a successful backfill these are met immediately at load time. Indicator-based alert rules return null (skip) when the required data isn't available yet — they do not fire false positives on insufficient history.
 - **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
