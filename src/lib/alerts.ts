@@ -101,13 +101,13 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
     case 'above': {
       if (!ctx.price) return null;
       return ctx.price.price > alert.value
-        ? { alert, message: `${alert.asset} is above $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
+        ? { alert, message: `above $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
         : null;
     }
     case 'below': {
       if (!ctx.price) return null;
       return ctx.price.price < alert.value
-        ? { alert, message: `${alert.asset} is below $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
+        ? { alert, message: `below $${fmt(alert.value)} (now $${fmt(ctx.price.price)})` }
         : null;
     }
     case 'range': {
@@ -116,7 +116,7 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       return inRange
         ? {
             alert,
-            message: `${alert.asset} is in range $${fmt(alert.low)}–$${fmt(alert.high)} (now $${fmt(ctx.price.price)})`
+            message: `in range $${fmt(alert.low)}–$${fmt(alert.high)} (now $${fmt(ctx.price.price)})`
           }
         : null;
     }
@@ -127,7 +127,7 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       return Math.abs(pct) >= Math.abs(alert.value)
         ? {
             alert,
-            message: `${alert.asset} moved ${pct.toFixed(2)}% in the last hour (threshold ${alert.value}%)`
+            message: `moved ${pct.toFixed(2)}% in the last hour (threshold ${alert.value}%)`
           }
         : null;
     }
@@ -138,7 +138,7 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       return ratio >= alert.multiplier
         ? {
             alert,
-            message: `${alert.asset} 1m volume spike: ${ratio.toFixed(2)}× median (threshold ${alert.multiplier}×)`
+            message: `1m volume spike: ${ratio.toFixed(2)}× median (threshold ${alert.multiplier}×)`
           }
         : null;
     }
@@ -147,7 +147,7 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       const { rsi14 } = ctx.indicators;
       if (rsi14 === null) return null;
       return rsi14 < alert.value
-        ? { alert, message: `${alert.asset} RSI(14) is ${rsi14.toFixed(1)} (below ${alert.value} — oversold)` }
+        ? { alert, message: `RSI(14) ${rsi14.toFixed(1)} (below ${alert.value} — oversold)` }
         : null;
     }
     case 'rsiAbove': {
@@ -155,7 +155,7 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       const { rsi14 } = ctx.indicators;
       if (rsi14 === null) return null;
       return rsi14 > alert.value
-        ? { alert, message: `${alert.asset} RSI(14) is ${rsi14.toFixed(1)} (above ${alert.value} — overbought)` }
+        ? { alert, message: `RSI(14) ${rsi14.toFixed(1)} (above ${alert.value} — overbought)` }
         : null;
     }
     case 'macdCross': {
@@ -164,11 +164,11 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       if (macd === null) return null;
       if (alert.direction === 'bullish') {
         return macd.histogram > 0
-          ? { alert, message: `${alert.asset} MACD bullish crossover (histogram ${macd.histogram.toFixed(4)})` }
+          ? { alert, message: `MACD bullish crossover (histogram ${macd.histogram.toFixed(4)})` }
           : null;
       } else {
         return macd.histogram < 0
-          ? { alert, message: `${alert.asset} MACD bearish crossover (histogram ${macd.histogram.toFixed(4)})` }
+          ? { alert, message: `MACD bearish crossover (histogram ${macd.histogram.toFixed(4)})` }
           : null;
       }
     }
@@ -178,11 +178,11 @@ export const evaluate = (alert: StoredAlert, ctx: EvalContext, now: number): Eva
       if (bb20 === null) return null;
       if (alert.direction === 'above') {
         return ctx.price.price > bb20.upper
-          ? { alert, message: `${alert.asset} broke above upper Bollinger Band ($${fmt(bb20.upper)})` }
+          ? { alert, message: `broke above upper Bollinger Band ($${fmt(bb20.upper)})` }
           : null;
       } else {
         return ctx.price.price < bb20.lower
-          ? { alert, message: `${alert.asset} broke below lower Bollinger Band ($${fmt(bb20.lower)})` }
+          ? { alert, message: `broke below lower Bollinger Band ($${fmt(bb20.lower)})` }
           : null;
       }
     }

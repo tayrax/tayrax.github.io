@@ -66,32 +66,32 @@ export const evaluateProposals = (
 
   if (indicators.rsi14 !== null && indicators.rsi14 < 30) {
     emit('rsiOversold', 'buy', indicators.rsi14,
-      `${asset} [${interval}] RSI(14) ${indicators.rsi14.toFixed(1)} — oversold, consider buying (price $${fmt(p)})`);
+      `RSI(14) ${indicators.rsi14.toFixed(1)} — oversold, consider buying (price $${fmt(p)})`);
   }
 
   if (indicators.rsi14 !== null && indicators.rsi14 > 70) {
     emit('rsiOverbought', 'sell', indicators.rsi14,
-      `${asset} [${interval}] RSI(14) ${indicators.rsi14.toFixed(1)} — overbought, consider selling (price $${fmt(p)})`);
+      `RSI(14) ${indicators.rsi14.toFixed(1)} — overbought, consider selling (price $${fmt(p)})`);
   }
 
   if (indicators.macd !== null && indicators.macd.histogram > 0) {
     emit('macdBullish', 'buy', indicators.macd.histogram,
-      `${asset} [${interval}] MACD bullish crossover (histogram ${indicators.macd.histogram.toFixed(4)}, price $${fmt(p)})`);
+      `MACD bullish crossover (histogram ${indicators.macd.histogram.toFixed(4)}, price $${fmt(p)})`);
   }
 
   if (indicators.macd !== null && indicators.macd.histogram < 0) {
     emit('macdBearish', 'sell', indicators.macd.histogram,
-      `${asset} [${interval}] MACD bearish crossover (histogram ${indicators.macd.histogram.toFixed(4)}, price $${fmt(p)})`);
+      `MACD bearish crossover (histogram ${indicators.macd.histogram.toFixed(4)}, price $${fmt(p)})`);
   }
 
   if (indicators.bb20 !== null && p < indicators.bb20.lower) {
     emit('bbBreakBelow', 'buy', indicators.bb20.lower,
-      `${asset} [${interval}] broke below lower Bollinger Band ($${fmt(indicators.bb20.lower)}), consider buying (price $${fmt(p)})`);
+      `broke below lower Bollinger Band ($${fmt(indicators.bb20.lower)}), consider buying (price $${fmt(p)})`);
   }
 
   if (indicators.bb20 !== null && p > indicators.bb20.upper) {
     emit('bbBreakAbove', 'sell', indicators.bb20.upper,
-      `${asset} [${interval}] broke above upper Bollinger Band ($${fmt(indicators.bb20.upper)}), consider selling (price $${fmt(p)})`);
+      `broke above upper Bollinger Band ($${fmt(indicators.bb20.upper)}), consider selling (price $${fmt(p)})`);
   }
 
   return results;

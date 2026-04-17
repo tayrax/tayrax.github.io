@@ -78,24 +78,35 @@
       <ul class="log-list">
         {#each visible as entry (entry.id)}
           <li class="log-row">
-            <div class="log-main">
-              <span class="ts">{formatTs(entry.ts)}</span>
-              <span class="kind-badge kind-{entry.kind}">{KIND_LABEL[entry.kind]}</span>
-              {#if entry.kind === 'tradeProposed' && entry.data?.interval}
-                <span class="interval-badge">{entry.data.interval}</span>
-              {/if}
-              {#if entry.kind === 'tradeProposed' && entry.data?.direction === 'buy'}
-                <span class="direction-badge direction-buy">buy</span>
-              {:else if entry.kind === 'tradeProposed' && entry.data?.direction === 'sell'}
-                <span class="direction-badge direction-sell">sell</span>
-              {/if}
-              {#if entry.asset}
-                <span class="asset">{entry.asset}</span>
-              {/if}
-              <span class="msg">{entry.message}</span>
-            </div>
             {#if entry.data}
-              <div class="log-data">{formatData(entry.data)}</div>
+              <details>
+                <summary class="log-main">
+                  <span class="ts">{formatTs(entry.ts)}</span>
+                  <span class="kind-badge kind-{entry.kind}">{KIND_LABEL[entry.kind]}</span>
+                  {#if entry.kind === 'tradeProposed' && entry.data?.interval}
+                    <span class="interval-badge">{entry.data.interval}</span>
+                  {/if}
+                  {#if entry.kind === 'tradeProposed' && entry.data?.direction === 'buy'}
+                    <span class="direction-badge direction-buy">buy</span>
+                  {:else if entry.kind === 'tradeProposed' && entry.data?.direction === 'sell'}
+                    <span class="direction-badge direction-sell">sell</span>
+                  {/if}
+                  {#if entry.asset}
+                    <span class="asset">{entry.asset}</span>
+                  {/if}
+                  <span class="msg">{entry.message}</span>
+                </summary>
+                <div class="log-data">{formatData(entry.data)}</div>
+              </details>
+            {:else}
+              <div class="log-main">
+                <span class="ts">{formatTs(entry.ts)}</span>
+                <span class="kind-badge kind-{entry.kind}">{KIND_LABEL[entry.kind]}</span>
+                {#if entry.asset}
+                  <span class="asset">{entry.asset}</span>
+                {/if}
+                <span class="msg">{entry.message}</span>
+              </div>
             {/if}
           </li>
         {/each}
@@ -204,8 +215,15 @@
     flex-direction: column;
     gap: 0.25rem;
   }
+  details { width: 100%; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] { border-color: #333; }
+  details[open] .log-data { margin-top: 0.25rem; }
+  .log-row:has(details):hover { border-color: #333; background: #1a1a1a; }
 
-  .log-main {
+  .log-main,
+  details > summary.log-main {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -237,9 +255,10 @@
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
     font-size: 0.72rem;
-    background: #1a2a1a;
-    color: #86efac;
+    background: #2a2a2a;
+    color: #ccc;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
     white-space: nowrap;
   }
 

@@ -64,7 +64,7 @@ describe('evaluate — above', () => {
     const result = evaluate(alert, priceCtx(51_000), now);
     expect(result).not.toBeNull();
     expect(result?.message).toContain('above');
-    expect(result?.message).toContain('bitcoin');
+    expect(result?.message).toContain('$50000');
   });
 
   it('does not fire when price equals the threshold', () => {
