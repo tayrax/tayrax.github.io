@@ -3,7 +3,7 @@
 
 import type { IndicatorValues } from './indicators';
 import type { PriceState } from './prices';
-import { PROPOSAL_COOLDOWN_MS, STORAGE_KEYS, type CandleInterval } from './config';
+import { PROPOSAL_COOLDOWN_MS, type CandleInterval } from './config';
 
 export type TradeDirection = 'buy' | 'sell';
 
@@ -25,37 +25,7 @@ export type TradeProposal = {
   message: string;
 };
 
-const STORAGE_KEY = STORAGE_KEYS.proposalCooldown;
-
-const loadCooldowns = (): Map<string, number> => {
-  const map = new Map<string, number>();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return map;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const now = Date.now();
-    for (const [k, v] of Object.entries(parsed)) {
-      if (typeof v === 'number' && now - v < PROPOSAL_COOLDOWN_MS) {
-        map.set(k, v);
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return map;
-};
-
-const persistCooldowns = (): void => {
-  try {
-    const obj: Record<string, number> = {};
-    for (const [k, v] of lastFired) obj[k] = v;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  } catch {
-    // ignore
-  }
-};
-
-const lastFired: Map<string, number> = loadCooldowns();
+const lastFired = new Map<string, number>();
 
 const cooldownKey = (asset: string, interval: CandleInterval, signal: TradeSignal): string =>
   `${asset}:${interval}:${signal}`;
@@ -67,11 +37,6 @@ const onCooldown = (asset: string, interval: CandleInterval, signal: TradeSignal
 
 export const resetCooldowns = (): void => {
   lastFired.clear();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // ignore
-  }
 };
 
 const fmt = (n: number): string =>
@@ -96,7 +61,6 @@ export const evaluateProposals = (
   ): void => {
     if (onCooldown(asset, interval, signal, now)) return;
     lastFired.set(cooldownKey(asset, interval, signal), now);
-    persistCooldowns();
     results.push({ asset, interval, direction, signal, indicatorValue, price: p, message });
   };
 

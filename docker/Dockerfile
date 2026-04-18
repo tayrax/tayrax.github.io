@@ -55,7 +55,7 @@ ENV HOME=/home/devel
 RUN npm version
 RUN npx --version
 
-ENV TAYRAX_CLAUDE_UPGRADE=2.1.114
+ENV TAYRAX_CLAUDE_UPGRADE=2.1.111
 
 RUN install -v -d -m 0750 ${HOME}/.local/npm \
 	&& cd ${HOME}/.local/npm \

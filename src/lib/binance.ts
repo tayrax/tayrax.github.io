@@ -18,9 +18,6 @@ export type ClosedCandle = {
 
 export type CandleListener = (candle: ClosedCandle) => void;
 
-export type KlineStatus = 'idle' | 'open' | 'closed';
-type KlineStatusListener = (status: KlineStatus) => void;
-
 type KlinePayload = {
   e: 'kline';
   s: string;
@@ -45,8 +42,6 @@ const STABLE_CONNECTION_MS = 10_000;
 export class BinanceKlineFeed {
   private ws: WebSocket | null = null;
   private listeners = new Set<CandleListener>();
-  private statusListeners = new Set<KlineStatusListener>();
-  private klineStatus: KlineStatus = 'idle';
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
@@ -73,24 +68,11 @@ export class BinanceKlineFeed {
       this.ws.close();
       this.ws = null;
     }
-    this.setKlineStatus('closed');
   }
 
   onCandleClosed(fn: CandleListener): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
-  }
-
-  onStatus(fn: KlineStatusListener): () => void {
-    this.statusListeners.add(fn);
-    fn(this.klineStatus);
-    return () => this.statusListeners.delete(fn);
-  }
-
-  private setKlineStatus(next: KlineStatus): void {
-    if (this.klineStatus === next) return;
-    this.klineStatus = next;
-    for (const fn of this.statusListeners) fn(next);
   }
 
   private connect(): void {
@@ -110,7 +92,6 @@ export class BinanceKlineFeed {
 
     ws.onopen = () => {
       this.connectedAt = Date.now();
-      this.setKlineStatus('open');
     };
     ws.onmessage = (ev: MessageEvent<string>) => {
       let msg: CombinedMessage;
@@ -158,7 +139,6 @@ export class BinanceKlineFeed {
         this.connectedAt !== null && Date.now() - this.connectedAt >= STABLE_CONNECTION_MS;
       this.connectedAt = null;
       this.ws = null;
-      this.setKlineStatus('closed');
       if (this.stopped) return;
       if (wasStable) this.reconnectAttempts = 0;
       const delay = Math.min(30_000, 500 * 2 ** this.reconnectAttempts);

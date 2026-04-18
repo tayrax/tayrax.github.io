@@ -96,6 +96,5 @@ export const STORAGE_KEYS = {
   lastSnapshot: 'tayrax.lastSnapshot.v1',
   logs: 'tayrax.logs.v1',
   enabledAssets: 'tayrax.enabledAssets.v1',
-  disabledAt: 'tayrax.disabledAt.v1',
-  proposalCooldown: 'tayrax.proposalCooldown.v1'
+  disabledAt: 'tayrax.disabledAt.v1'
 } as const;

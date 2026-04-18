@@ -4,8 +4,7 @@
       "Bash(npm run:*)",
       "Bash(make ci-check:*)",
       "Bash(npm ls:*)",
-      "Bash(npm test:*)",
-      "Bash(npx vitest *)"
+      "Bash(npm test:*)"
     ]
   }
 }

@@ -15,7 +15,6 @@
     { path: '/', label: 'Dashboard' },
     { path: '/system/', label: 'System' },
     { path: '/logs/', label: 'Logs' },
-    { path: '/bot/', label: 'Bot' },
   ];
 
   function toggle(): void {

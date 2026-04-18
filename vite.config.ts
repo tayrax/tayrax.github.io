@@ -34,7 +34,6 @@ export default defineConfig(({ mode }) => {
           system: resolve(__dirname, 'system/index.html'),
           logs: resolve(__dirname, 'logs/index.html'),
           help: resolve(__dirname, 'help/index.html'),
-          bot: resolve(__dirname, 'bot/index.html'),
         },
       },
     },
