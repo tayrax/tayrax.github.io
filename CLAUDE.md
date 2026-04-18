@@ -250,7 +250,7 @@ Rules:
 - Call `logAction` at the point where the action is taken, not after the fact.
 - Every new action kind requires a new entry in the `LogKind` union in `src/lib/logs.ts`. The TypeScript compiler will then flag every render site that is missing a case (e.g. `KIND_LABEL` in `Logs.svelte`) — fix all flagged sites before committing.
 - Do not log routine data updates (price ticks, candle closes) — only log discrete decisions or outputs the user would care to audit.
-- Trade proposals (`tradeProposed`) are generated in `src/lib/proposals.ts` and logged via `logAction`. They are driven by indicator signals (RSI, MACD, BB) evaluated across all `CANDLE_INTERVALS`, and subject to `PROPOSAL_COOLDOWN_MS` per asset+interval+signal to avoid flooding the log. The `interval` is included in the log entry's `data` field and displayed as a badge in `Logs.svelte`.
+- Trade proposals (`tradeProposed`) are generated in `src/lib/proposals.ts` and logged via `logAction`. They are driven by indicator signals (RSI, MACD, BB) evaluated across all `CANDLE_INTERVALS`, and subject to `PROPOSAL_COOLDOWN_MS` per asset+interval+signal to avoid flooding the log. The `interval` is included in the log entry's `data` field and displayed as a badge in `Logs.svelte`. The cooldown map is persisted to `STORAGE_KEYS.proposalCooldown` (`tayrax.proposalCooldown.v1`) on every emit and rehydrated at module load (stale entries past the window are dropped), so the worker will not flood the log with duplicate proposals after a restart.
 
 ---
 

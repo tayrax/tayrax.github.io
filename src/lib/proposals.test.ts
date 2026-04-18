@@ -1,8 +1,9 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { evaluateProposals, resetCooldowns } from './proposals';
+import { STORAGE_KEYS } from './config';
 import type { IndicatorValues } from './indicators';
 import type { PriceState } from './prices';
 
@@ -146,5 +147,69 @@ describe('evaluateProposals', () => {
     expect(result[0].price).toBe(50000);
     expect(typeof result[0].message).toBe('string');
     expect(result[0].message.length).toBeGreaterThan(0);
+  });
+});
+
+describe('proposal cooldown persistence', () => {
+  beforeEach(() => {
+    resetCooldowns();
+    localStorage.removeItem(STORAGE_KEYS.proposalCooldown);
+    vi.resetModules();
+  });
+
+  it('persists cooldown to localStorage after emit', () => {
+    const ind = makeIndicators({ rsi14: 25 });
+    evaluateProposals('bitcoin', '1m', ind, makePrice(50000), NOW);
+    const raw = localStorage.getItem(STORAGE_KEYS.proposalCooldown);
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw!);
+    expect(parsed['bitcoin:1m:rsiOversold']).toBe(NOW);
+  });
+
+  it('resetCooldowns clears localStorage', () => {
+    const ind = makeIndicators({ rsi14: 25 });
+    evaluateProposals('bitcoin', '1m', ind, makePrice(50000), NOW);
+    expect(localStorage.getItem(STORAGE_KEYS.proposalCooldown)).not.toBeNull();
+    resetCooldowns();
+    expect(localStorage.getItem(STORAGE_KEYS.proposalCooldown)).toBeNull();
+  });
+
+  it('hydrates cooldown from localStorage on module load', async () => {
+    const now = Date.now();
+    // Seed localStorage with a recent cooldown entry before the module loads.
+    localStorage.setItem(
+      STORAGE_KEYS.proposalCooldown,
+      JSON.stringify({ 'bitcoin:1m:rsiOversold': now })
+    );
+    const mod = await import('./proposals');
+    const ind = makeIndicators({ rsi14: 25 });
+    // Cooldown was persisted → new evaluation must suppress.
+    const result = mod.evaluateProposals('bitcoin', '1m', ind, makePrice(50000), now + 1000);
+    expect(result).toHaveLength(0);
+    mod.resetCooldowns();
+  });
+
+  it('drops stale entries older than the cooldown window on load', async () => {
+    const now = Date.now();
+    // Seed localStorage with a stale cooldown entry (well past the window).
+    localStorage.setItem(
+      STORAGE_KEYS.proposalCooldown,
+      JSON.stringify({ 'bitcoin:1m:rsiOversold': now - 2 * 60 * 60 * 1000 })
+    );
+    const mod = await import('./proposals');
+    const ind = makeIndicators({ rsi14: 25 });
+    // Stale entry pruned → new evaluation fires.
+    const result = mod.evaluateProposals('bitcoin', '1m', ind, makePrice(50000), now);
+    expect(result).toHaveLength(1);
+    mod.resetCooldowns();
+  });
+
+  it('ignores malformed JSON in localStorage', async () => {
+    localStorage.setItem(STORAGE_KEYS.proposalCooldown, '{not json');
+    const mod = await import('./proposals');
+    const ind = makeIndicators({ rsi14: 25 });
+    const result = mod.evaluateProposals('bitcoin', '1m', ind, makePrice(50000), Date.now());
+    expect(result).toHaveLength(1);
+    mod.resetCooldowns();
   });
 });
