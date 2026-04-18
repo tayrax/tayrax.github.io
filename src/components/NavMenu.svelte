@@ -9,8 +9,6 @@
   let current = '/';
   let wrapper: HTMLElement;
 
-  const buildParam = `?build=${__APP_BUILD__}`;
-
   const items: { path: string; label: string }[] = [
     { path: '/', label: 'Dashboard' },
     { path: '/system/', label: 'System' },
@@ -57,7 +55,7 @@
     <ul class="dropdown" role="menu">
       {#each items as item}
         <li role="none" class:active={current === item.path}>
-          <a role="menuitem" href={item.path + buildParam}>{item.label}</a>
+          <a role="menuitem" href={item.path}>{item.label}</a>
         </li>
       {/each}
     </ul>
