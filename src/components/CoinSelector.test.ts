@@ -1,12 +1,14 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import CoinSelector from './CoinSelector.svelte';
 import { enabledAssets, toggleAsset } from '../lib/enabled-assets';
 import { MANDATORY_ASSET } from '../lib/config';
+
+vi.mock('../lib/bot-client');
 
 // Reset enabled assets to default (bitcoin only) before each test
 beforeEach(() => {

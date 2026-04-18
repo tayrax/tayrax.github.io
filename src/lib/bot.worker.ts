@@ -1,7 +1,6 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { STORAGE_KEYS, SUPPORTED_ASSETS } from './config';
 import type { TabToWorker, WorkerToTab } from './bot-types';
 import { BotEngine } from './bot-engine';
 
@@ -35,6 +34,15 @@ function broadcastBotState(): void {
   }
 }
 
+function sendTo(port: MessagePort, msg: WorkerToTab): void {
+  try {
+    port.postMessage(msg);
+  } catch {
+    allPorts.delete(port);
+    botStatePorts.delete(port);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Engine
 // ---------------------------------------------------------------------------
@@ -43,21 +51,6 @@ const engine = new BotEngine({
   broadcastBotState,
   getConnectedTabCount: () => allPorts.size
 });
-
-// ---------------------------------------------------------------------------
-// Boot: load enabled assets from localStorage and start feeds
-// ---------------------------------------------------------------------------
-function loadBootAssets(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.enabledAssets);
-    if (!raw) return ['bitcoin'];
-    const parsed = JSON.parse(raw) as string[];
-    const valid = parsed.filter((a) => (SUPPORTED_ASSETS as readonly string[]).includes(a));
-    return valid.length > 0 ? valid : ['bitcoin'];
-  } catch {
-    return ['bitcoin'];
-  }
-}
 
 // Periodic botState refresh keeps lastTickAt current on the bot page.
 setInterval(() => {
@@ -72,14 +65,19 @@ setInterval(() => {
   if (!port) return;
 
   allPorts.add(port);
+
+  // Hand off initial state to the newly-connected tab: current alerts list,
+  // enabled assets, and a one-time prune list if any assets expired on boot.
+  sendTo(port, { type: 'alertList', alerts: engine.getAlertsSnapshot() });
+  sendTo(port, { type: 'enabledAssetsList', assets: engine.getEnabledAssetsSnapshot() });
+  const pending = engine.takePendingPrune();
+  if (pending.length > 0) sendTo(port, { type: 'pruneAssets', assets: pending });
+
   broadcastBotState();
 
   port.addEventListener('message', (me: MessageEvent<TabToWorker>) => {
     const msg = me.data;
     switch (msg.type) {
-      case 'setEnabledAssets':
-        engine.setEnabledAssets(msg.assets);
-        break;
       case 'reconnect':
         engine.reconnect(msg.feed);
         break;
@@ -92,8 +90,14 @@ setInterval(() => {
           allPorts.delete(port);
         }
         break;
-      case 'alertsChanged':
-        engine.refreshAlerts();
+      case 'addAlert':
+        engine.addAlert(msg.rule);
+        break;
+      case 'removeAlert':
+        engine.removeAlert(msg.id);
+        break;
+      case 'toggleAsset':
+        engine.toggleAsset(msg.asset);
         break;
     }
   });
@@ -106,6 +110,3 @@ setInterval(() => {
 
   port.start();
 });
-
-// Boot
-engine.setEnabledAssets(loadBootAssets());

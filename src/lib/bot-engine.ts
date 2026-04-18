@@ -1,7 +1,13 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { PRICE_PROVIDER, CANDLE_INTERVALS, type CandleInterval } from './config';
+import {
+  PRICE_PROVIDER,
+  CANDLE_INTERVALS,
+  MANDATORY_ASSET,
+  type AssetId,
+  type CandleInterval
+} from './config';
 import type { PriceFeedStatus, PriceProvider } from './provider';
 import { BinancePriceFeed } from './binance-price';
 import { BinanceKlineFeed } from './binance';
@@ -15,13 +21,22 @@ import {
 import { applyTick as applyTickToStore, prices, type PriceMap } from './prices';
 import { applyCandle as applyVolumeCandle, volumes, type VolumeMap } from './volumes';
 import {
-  alerts,
   evaluate,
   getAlertInterval,
-  markFired,
-  reloadAlerts,
+  loadAlertsFromStorage,
+  makeAlertId,
+  persistAlertsToStorage,
+  type NewAlert,
   type StoredAlert
-} from './alerts';
+} from './alert-core';
+import {
+  applyToggle,
+  computeExpiredDisabledAssets,
+  loadDisabledAtFromStorage,
+  loadEnabledFromStorage,
+  persistDisabledAtToStorage,
+  persistEnabledToStorage
+} from './enabled-assets-core';
 import { evaluateProposals } from './proposals';
 import { computeIndicators } from './indicators';
 import { backfillAll as defaultBackfillAll } from './backfill';
@@ -41,6 +56,7 @@ export interface BotEngineDeps {
   createKlineFeed?: KlineFeedFactory;
   backfill?: (assets: readonly string[]) => Promise<void>;
   now?: () => number;
+  skipInitialPrune?: boolean;
 }
 
 const defaultCreatePriceFeed: PriceFeedFactory = (assets) =>
@@ -51,7 +67,10 @@ const defaultCreateKlineFeed: KlineFeedFactory = (assets) => new BinanceKlineFee
 export class BotEngine {
   private priceStatus: PriceFeedStatus = 'idle';
   private klineStatus: 'idle' | 'open' | 'closed' = 'idle';
-  private enabledAssetsArr: string[] = [];
+  private enabledAssetsArr: AssetId[] = [];
+  private disabledAt: Record<string, number> = {};
+  private alertsList: StoredAlert[] = [];
+  private pendingPrune: Set<AssetId> = new Set();
   private readonly lastTickAt: Record<string, number> = {};
   private readonly reconnectCount: Record<'price' | 'kline', number> = { price: 0, kline: 0 };
   private readonly errorRing: FeedError[] = [];
@@ -63,12 +82,10 @@ export class BotEngine {
   private unsubCandle: (() => void) | null = null;
   private unsubKlineStatus: (() => void) | null = null;
 
-  private alertsCache: StoredAlert[] = [];
   private pricesCache: PriceMap = {};
   private volumesCache: VolumeMap = {};
   private readonly candlesCache: Record<CandleInterval, CandleMap>;
 
-  private readonly unsubAlerts: () => void;
   private readonly unsubPrices: () => void;
   private readonly unsubVolumes: () => void;
   private readonly unsubCandleStores: Array<() => void> = [];
@@ -78,13 +95,39 @@ export class BotEngine {
       CANDLE_INTERVALS.map((iv) => [iv, {}])
     ) as Record<CandleInterval, CandleMap>;
 
-    this.unsubAlerts = alerts.subscribe((list) => { this.alertsCache = list; });
     this.unsubPrices = prices.subscribe((map) => { this.pricesCache = map; });
     this.unsubVolumes = volumes.subscribe((map) => { this.volumesCache = map; });
     for (const iv of CANDLE_INTERVALS) {
       this.unsubCandleStores.push(
         candleStores[iv].subscribe((map) => { this.candlesCache[iv] = map; })
       );
+    }
+
+    // Load authoritative state from localStorage.
+    this.alertsList = loadAlertsFromStorage();
+    this.enabledAssetsArr = loadEnabledFromStorage();
+    this.disabledAt = loadDisabledAtFromStorage();
+
+    // Compute expired assets, clean up the disabledAt map, and queue a
+    // one-time pruneAssets broadcast for the first tab that connects.
+    if (!deps.skipInitialPrune) {
+      const expired = computeExpiredDisabledAssets(
+        this.enabledAssetsArr,
+        this.disabledAt,
+        this.nowFn()
+      );
+      if (expired.size > 0) {
+        for (const a of expired) delete this.disabledAt[a];
+        persistDisabledAtToStorage(this.disabledAt);
+        this.pendingPrune = expired;
+      }
+    }
+
+    // Kick off feeds if we already have enabled assets, backfilling the
+    // full set once on first start.
+    if (this.enabledAssetsArr.length > 0) {
+      this.startFeeds();
+      void this.backfillFn(this.enabledAssetsArr);
     }
   }
 
@@ -108,19 +151,94 @@ export class BotEngine {
     };
   }
 
-  setEnabledAssets(assets: string[]): void {
-    if (!this.assetsChanged(assets)) return;
-    const newAssets = assets.filter((a) => !this.enabledAssetsArr.includes(a));
-    this.teardownFeeds();
-    this.enabledAssetsArr = [...assets];
-    if (assets.length === 0) {
-      this.deps.broadcastBotState();
-      return;
+  getAlertsSnapshot(): StoredAlert[] {
+    return [...this.alertsList];
+  }
+
+  getEnabledAssetsSnapshot(): AssetId[] {
+    return [...this.enabledAssetsArr];
+  }
+
+  // Called by the worker's connect handler to hand off a pending prune to the
+  // first tab that joins. Returns the set to broadcast, then clears it so
+  // subsequent tabs don't re-prune.
+  takePendingPrune(): AssetId[] {
+    if (this.pendingPrune.size === 0) return [];
+    const out = [...this.pendingPrune];
+    this.pendingPrune.clear();
+    return out;
+  }
+
+  // Bulk replacement of the enabled-assets list. Used by tests; the tab-side
+  // API posts single toggleAsset messages. Ensures MANDATORY_ASSET is always
+  // included, persists + broadcasts, rewires feeds, and backfills newly added
+  // assets.
+  setEnabledAssets(assets: AssetId[]): void {
+    const prev = this.enabledAssetsArr;
+    const next: AssetId[] = assets.includes(MANDATORY_ASSET)
+      ? [...assets]
+      : [MANDATORY_ASSET, ...assets];
+    if (prev.length === next.length && prev.every((a, i) => a === next[i])) return;
+
+    const now = this.nowFn();
+    const nextDisabledAt: Record<string, number> = { ...this.disabledAt };
+    for (const a of prev) {
+      if (!next.includes(a) && a !== MANDATORY_ASSET) nextDisabledAt[a] = now;
     }
-    this.startFeeds();
-    if (newAssets.length > 0) {
-      void this.backfillFn(newAssets);
-    }
+    for (const a of next) delete nextDisabledAt[a];
+
+    const newlyAdded = next.filter((a) => !prev.includes(a));
+    this.enabledAssetsArr = next;
+    this.disabledAt = nextDisabledAt;
+    persistEnabledToStorage(next);
+    persistDisabledAtToStorage(nextDisabledAt);
+    this.deps.broadcast({ type: 'enabledAssetsList', assets: next });
+    this.rewireFeeds(prev);
+    if (newlyAdded.length > 0) void this.backfillFn(newlyAdded);
+  }
+
+  toggleAsset(asset: AssetId): void {
+    const { enabled, disabledAt } = applyToggle(
+      asset,
+      this.enabledAssetsArr,
+      this.disabledAt,
+      this.nowFn()
+    );
+    // applyToggle returns the inputs unchanged when the toggle is a no-op;
+    // if nothing changed, skip the persistence + rewire.
+    if (enabled === this.enabledAssetsArr) return;
+    const newlyAdded = enabled.filter((a) => !this.enabledAssetsArr.includes(a));
+    const prev = this.enabledAssetsArr;
+    this.enabledAssetsArr = enabled;
+    this.disabledAt = disabledAt;
+    persistEnabledToStorage(enabled);
+    persistDisabledAtToStorage(disabledAt);
+    this.deps.broadcast({ type: 'enabledAssetsList', assets: enabled });
+    this.rewireFeeds(prev);
+    if (newlyAdded.length > 0) void this.backfillFn(newlyAdded);
+  }
+
+  addAlert(rule: NewAlert): void {
+    const next: StoredAlert = { ...rule, id: makeAlertId(), lastFiredAt: null } as StoredAlert;
+    this.alertsList = [...this.alertsList, next];
+    persistAlertsToStorage(this.alertsList);
+    this.deps.broadcast({ type: 'alertList', alerts: this.alertsList });
+  }
+
+  removeAlert(id: string): void {
+    const before = this.alertsList;
+    this.alertsList = this.alertsList.filter((a) => a.id !== id);
+    if (before === this.alertsList) return;
+    persistAlertsToStorage(this.alertsList);
+    this.deps.broadcast({ type: 'alertList', alerts: this.alertsList });
+  }
+
+  private markFired(id: string, at: number): void {
+    this.alertsList = this.alertsList.map((a) =>
+      a.id === id ? { ...a, lastFiredAt: at } : a
+    );
+    persistAlertsToStorage(this.alertsList);
+    this.deps.broadcast({ type: 'alertList', alerts: this.alertsList });
   }
 
   reconnect(feed: 'price' | 'kline'): void {
@@ -134,23 +252,20 @@ export class BotEngine {
     }
   }
 
-  refreshAlerts(): void {
-    reloadAlerts();
-  }
-
   destroy(): void {
     this.teardownFeeds();
-    this.unsubAlerts();
     this.unsubPrices();
     this.unsubVolumes();
     for (const u of this.unsubCandleStores) u();
   }
 
-  private assetsChanged(next: string[]): boolean {
-    if (next.length !== this.enabledAssetsArr.length) return true;
-    const a = [...next].sort();
-    const b = [...this.enabledAssetsArr].sort();
-    return a.some((v, i) => v !== b[i]);
+  private rewireFeeds(_prev: AssetId[]): void {
+    this.teardownFeeds();
+    if (this.enabledAssetsArr.length === 0) {
+      this.deps.broadcastBotState();
+      return;
+    }
+    this.startFeeds();
   }
 
   private teardownFeeds(): void {
@@ -224,8 +339,8 @@ export class BotEngine {
   runEvaluation(now: number): void {
     const enabled = new Set(this.enabledAssetsArr);
 
-    for (const alert of this.alertsCache) {
-      if (!enabled.has(alert.asset)) continue;
+    for (const alert of this.alertsList) {
+      if (!enabled.has(alert.asset as AssetId)) continue;
       const alertInterval = getAlertInterval(alert);
       const assetCandles = this.candlesCache[alertInterval][alert.asset] ?? [];
       const indicators = assetCandles.length > 0 ? computeIndicators(assetCandles) : undefined;
@@ -239,7 +354,7 @@ export class BotEngine {
         now
       );
       if (!hit) continue;
-      markFired(alert.id, now);
+      this.markFired(alert.id, now);
       this.deps.broadcast({
         type: 'notify',
         title: `tayrax · ${alert.asset}`,

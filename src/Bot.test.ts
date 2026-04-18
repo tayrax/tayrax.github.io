@@ -27,9 +27,9 @@ const botMock = vi.hoisted(() => ({
   },
 }));
 
-// createBotClient is mocked so no real worker is constructed.
-vi.mock('./lib/bot-client', () => ({
-  createBotClient: () => ({
+// createBotClient / getBotClient are mocked so no real worker is constructed.
+vi.mock('./lib/bot-client', () => {
+  const factory = () => ({
     post(msg: TabToWorker): void { botMock.postMessages.push(msg); },
     subscribe(handler: MessageHandler): () => void {
       botMock.subscribers.push(handler);
@@ -39,8 +39,9 @@ vi.mock('./lib/bot-client', () => ({
       botMock.subscribers = [];
       botMock.destroyed = true;
     },
-  }),
-}));
+  });
+  return { createBotClient: factory, getBotClient: factory };
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -48,3 +48,16 @@ class SharedWorkerBotClient implements BotClient {
 export function createBotClient(): BotClient {
   return new SharedWorkerBotClient();
 }
+
+// Singleton accessor — tab-side modules (alerts, enabled-assets) use this to
+// post messages to the worker without each constructing their own client.
+// Only the first call creates the underlying SharedWorker; subsequent calls
+// return the same instance. Calling this from a worker context throws.
+let _singleton: BotClient | null = null;
+export function getBotClient(): BotClient {
+  if (typeof window === 'undefined') {
+    throw new Error('getBotClient() must be called from a tab context');
+  }
+  if (!_singleton) _singleton = createBotClient();
+  return _singleton;
+}

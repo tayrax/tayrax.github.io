@@ -3,7 +3,8 @@
 
 import type { PriceFeedStatus } from './provider';
 import type { OHLCVCandle } from './candles';
-import type { CandleInterval } from './config';
+import type { CandleInterval, AssetId } from './config';
+import type { StoredAlert, NewAlert } from './alert-core';
 
 export type FeedError = {
   feed: 'price' | 'kline';
@@ -27,10 +28,14 @@ export type WorkerToTab =
   | { type: 'priceStatus'; status: PriceFeedStatus }
   | { type: 'klineStatus'; status: 'idle' | 'open' | 'closed' }
   | { type: 'botState'; state: BotState }
-  | { type: 'notify'; title: string; body: string };
+  | { type: 'notify'; title: string; body: string }
+  | { type: 'alertList'; alerts: StoredAlert[] }
+  | { type: 'enabledAssetsList'; assets: AssetId[] }
+  | { type: 'pruneAssets'; assets: AssetId[] };
 
 export type TabToWorker =
-  | { type: 'setEnabledAssets'; assets: string[] }
   | { type: 'reconnect'; feed: 'price' | 'kline' }
   | { type: 'subscribeBotState' }
-  | { type: 'alertsChanged' };
+  | { type: 'addAlert'; rule: NewAlert }
+  | { type: 'removeAlert'; id: string }
+  | { type: 'toggleAsset'; asset: AssetId };

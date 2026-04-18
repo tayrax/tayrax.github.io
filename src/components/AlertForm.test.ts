@@ -1,13 +1,15 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import AlertForm from './AlertForm.svelte';
 import { alerts } from '../lib/alerts';
 import { MANDATORY_ASSET } from '../lib/config';
 import { toggleAsset } from '../lib/enabled-assets';
+
+vi.mock('../lib/bot-client');
 
 // ---------------------------------------------------------------------------
 // helpers

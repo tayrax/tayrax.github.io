@@ -7,10 +7,11 @@ import App from './App.svelte';
 import { MANDATORY_ASSET } from './lib/config';
 import { toggleAsset } from './lib/enabled-assets';
 
+vi.mock('./lib/bot-client');
+
 // ---------------------------------------------------------------------------
-// WebSocket stub — jsdom has no WebSocket; onMount calls feed.start() which
-// calls new WebSocket(...). Provide a no-op stand-in so the constructor and
-// event-handler assignments don't throw.
+// WebSocket stub — jsdom has no WebSocket. Although the worker now owns
+// feed instances, other code paths may still construct one; provide a no-op.
 // ---------------------------------------------------------------------------
 class MockWebSocket {
   onopen: (() => void) | null = null;
@@ -20,18 +21,8 @@ class MockWebSocket {
   close() {}
 }
 
-class MockSharedWorker {
-  port = {
-    postMessage(_msg: unknown) {},
-    addEventListener(_type: string, _fn: unknown) {},
-    start() {},
-    close() {},
-  };
-}
-
 beforeAll(() => {
   vi.stubGlobal('WebSocket', MockWebSocket);
-  vi.stubGlobal('SharedWorker', MockSharedWorker);
 });
 afterAll(() => vi.unstubAllGlobals());
 

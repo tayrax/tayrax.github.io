@@ -1,7 +1,7 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy } from 'svelte';
   import PriceCard from './components/PriceCard.svelte';
   import AlertForm from './components/AlertForm.svelte';
   import AlertList from './components/AlertList.svelte';
@@ -10,35 +10,29 @@
   import CoinSelector from './components/CoinSelector.svelte';
   import { MANDATORY_ASSET, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
-  import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
+  import { enabledAssets } from './lib/enabled-assets';
   import type { PriceFeedStatus } from './lib/provider';
   import { applyTick, prices, pruneAssets } from './lib/prices';
   import { applyCandle, pruneVolumes } from './lib/volumes';
   import { applyClosedCandle, pruneCandles } from './lib/candles';
-  import { alerts } from './lib/alerts';
   import {
     currentPermission,
     notify,
     requestPermission,
     type NotificationPermissionState
   } from './lib/notifications';
-  import { createBotClient } from './lib/bot-client';
-  import type { BotClient } from './lib/bot-client';
+  import { getBotClient } from './lib/bot-client';
   import type { WorkerToTab } from './lib/bot-types';
 
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
 
-  let mounted = false;
-  let currentEnabledCache: AssetId[] = [];
-
-  // Bot client — connects to the SharedWorker.
-  // The worker owns all evaluation, logging, backfill, and notification logic.
-  // This component only mirrors feed broadcasts into tab-side stores for UI
-  // rendering, and relays alert CRUD events and notifications to/from the worker.
-  let botClient: BotClient | null = null;
-  let unsubBot: (() => void) | null = null;
+  // The SharedWorker owns all evaluation, logging, backfill, and notification
+  // logic, as well as the authoritative alerts + enabled-assets state. This
+  // component mirrors feed broadcasts into tab-side stores for UI rendering
+  // and relays pruneAssets/notify messages to tab-side cleanup + browser APIs.
+  const botClient = getBotClient();
 
   const handlePermission = async (): Promise<void> => {
     permission = await requestPermission();
@@ -48,65 +42,39 @@
   let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
 
   const unsubEnabled = enabledAssets.subscribe((enabled) => {
-    if (!mounted) {
-      currentEnabledCache = enabled;
-      return;
-    }
-    currentEnabledCache = enabled;
-    botClient?.post({ type: 'setEnabledAssets', assets: enabled });
     if (!enabled.includes(selectedAsset as AssetId)) {
       selectedAsset = MANDATORY_ASSET;
     }
   });
 
-  // Relay tab-side alert mutations (add/remove) to the worker so its evaluation
-  // cache stays in sync. The worker does not receive storage events.
-  let alertsInitialised = false;
-  const unsubAlertsChanged = alerts.subscribe(() => {
-    if (!alertsInitialised) {
-      alertsInitialised = true;
-      return;
-    }
-    botClient?.post({ type: 'alertsChanged' });
-  });
-
-  onMount(() => {
-    // Prune assets that have been disabled beyond the grace period
-    const expired = getExpiredDisabledAssets();
-    if (expired.size > 0) {
-      pruneAssets(expired);
-      pruneCandles(expired);
-      pruneVolumes(expired);
-      clearExpiredDisabledAt(expired);
-    }
-
-    mounted = true;
-    botClient = createBotClient();
-    unsubBot = botClient.subscribe((msg: WorkerToTab) => {
-      switch (msg.type) {
-        case 'priceTick':
-          applyTick(msg.asset, msg.price, msg.receivedAt);
-          break;
-        case 'closedCandle':
-          if (msg.interval === '1m') applyCandle(msg.asset, msg.candle.baseVolume, msg.candle.closeTime);
-          applyClosedCandle(msg.interval, { asset: msg.asset, interval: msg.interval, ...msg.candle });
-          break;
-        case 'priceStatus':
-          status = msg.status;
-          break;
-        case 'notify':
-          notify(msg.title, msg.body);
-          break;
+  const unsubBot = botClient.subscribe((msg: WorkerToTab) => {
+    switch (msg.type) {
+      case 'priceTick':
+        applyTick(msg.asset, msg.price, msg.receivedAt);
+        break;
+      case 'closedCandle':
+        if (msg.interval === '1m') applyCandle(msg.asset, msg.candle.baseVolume, msg.candle.closeTime);
+        applyClosedCandle(msg.interval, { asset: msg.asset, interval: msg.interval, ...msg.candle });
+        break;
+      case 'priceStatus':
+        status = msg.status;
+        break;
+      case 'notify':
+        notify(msg.title, msg.body);
+        break;
+      case 'pruneAssets': {
+        const set = new Set(msg.assets);
+        pruneAssets(set);
+        pruneCandles(set);
+        pruneVolumes(set);
+        break;
       }
-    });
-    botClient.post({ type: 'setEnabledAssets', assets: currentEnabledCache });
+    }
   });
 
   onDestroy(() => {
-    unsubBot?.();
-    botClient?.destroy();
+    unsubBot();
     unsubEnabled();
-    unsubAlertsChanged();
   });
 </script>
 

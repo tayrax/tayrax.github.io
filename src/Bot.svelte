@@ -3,20 +3,19 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import NavMenu from './components/NavMenu.svelte';
-  import { createBotClient } from './lib/bot-client';
-  import type { BotClient } from './lib/bot-client';
+  import { getBotClient } from './lib/bot-client';
   import type { BotState } from './lib/bot-types';
 
   let state: BotState | null = null;
 
-  const botClient: BotClient = createBotClient();
-  botClient.subscribe((msg) => {
+  const botClient = getBotClient();
+  const unsub = botClient.subscribe((msg) => {
     if (msg.type === 'botState') state = msg.state;
   });
   botClient.post({ type: 'subscribeBotState' });
 
   onDestroy(() => {
-    botClient.destroy();
+    unsub();
   });
 
   function reconnect(feed: 'price' | 'kline'): void {

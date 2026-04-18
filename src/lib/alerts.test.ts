@@ -2,16 +2,11 @@
 // See LICENSE file.
 
 import { describe, it, expect } from 'vitest';
-import { get } from 'svelte/store';
 import {
-  alerts,
-  addAlert,
-  removeAlert,
-  markFired,
   evaluate,
   type StoredAlert,
   type EvalContext,
-} from './alerts';
+} from './alert-core';
 import { ALERT_COOLDOWN_MS } from './config';
 
 // ---------------------------------------------------------------------------
@@ -323,35 +318,6 @@ describe('evaluate — bbBreakout', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// store operations: addAlert / removeAlert / markFired
-// ---------------------------------------------------------------------------
-describe('alert store', () => {
-  it('addAlert appends a new alert with a generated id', () => {
-    const before = get(alerts).length;
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 100_000 });
-    const after = get(alerts);
-    expect(after.length).toBe(before + 1);
-    const added = after[after.length - 1];
-    expect(added.id).toBeTruthy();
-    expect(added.lastFiredAt).toBeNull();
-  });
-
-  it('removeAlert deletes the alert by id', () => {
-    addAlert({ asset: 'ethereum', interval: '1m', kind: 'below', value: 1000 });
-    const all = get(alerts);
-    const target = all[all.length - 1];
-    removeAlert(target.id);
-    expect(get(alerts).find((a) => a.id === target.id)).toBeUndefined();
-  });
-
-  it('markFired sets lastFiredAt on the matching alert', () => {
-    addAlert({ asset: 'solana', interval: '1m', kind: 'pctChange', value: 10 });
-    const before = get(alerts);
-    const target = before[before.length - 1];
-    const ts = Date.now();
-    markFired(target.id, ts);
-    const updated = get(alerts).find((a) => a.id === target.id);
-    expect(updated?.lastFiredAt).toBe(ts);
-  });
-});
+// Note: addAlert / removeAlert / markFired store-operation tests moved to
+// bot-engine.test.ts — alerts.ts is now a tab-side mirror of the worker's
+// authoritative list and does not own write operations.

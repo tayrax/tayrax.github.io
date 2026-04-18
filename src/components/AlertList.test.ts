@@ -1,20 +1,29 @@
 // Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com>
 // See LICENSE file.
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import AlertList from './AlertList.svelte';
-import { alerts, addAlert, removeAlert, markFired } from '../lib/alerts';
+import { alerts, addAlert, _applyAlertList } from '../lib/alerts';
+import { _resetMockBotClient } from '../lib/__mocks__/bot-client';
+import type { StoredAlert } from '../lib/alert-core';
+
+vi.mock('../lib/bot-client');
 
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
-
-// Drain the alerts store to a clean state before each test by removing all
-// alerts that may have been left by prior tests in this file.
 const clearAlerts = (): void => {
-  get(alerts).forEach((a) => removeAlert(a.id));
+  _resetMockBotClient();
+};
+
+// markFired is worker-owned in production; simulate by mutating the tab-side
+// mirror directly via the exported setter.
+const markFiredInMirror = (id: string, at: number): void => {
+  const current = get(alerts);
+  const next: StoredAlert[] = current.map((a) => (a.id === id ? { ...a, lastFiredAt: at } : a));
+  _applyAlertList(next);
 };
 
 // ---------------------------------------------------------------------------
@@ -57,7 +66,7 @@ describe('AlertList — populated', () => {
   it('shows "last fired" when lastFiredAt is set', () => {
     addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 60_000 });
     const target = get(alerts).at(-1)!;
-    markFired(target.id, Date.now());
+    markFiredInMirror(target.id, Date.now());
     const { getByText } = render(AlertList);
     expect(getByText(/last fired/)).toBeInTheDocument();
   });

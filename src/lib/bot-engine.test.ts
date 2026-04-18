@@ -13,7 +13,7 @@ import { CANDLE_INTERVALS } from './config';
 import { prices, pruneAssets } from './prices';
 import { volumes, pruneVolumes } from './volumes';
 import { candleStores, pruneCandles, prependCandles } from './candles';
-import { alerts, addAlert, reloadAlerts, type NewAlert } from './alerts';
+import type { NewAlert } from './alert-core';
 import { resetCooldowns } from './proposals';
 import { logs, clearLogs } from './logs';
 
@@ -151,7 +151,6 @@ function resetStores(): void {
     for (const k of Object.keys(get(candleStores[iv]))) candleKeys.add(k);
   }
   pruneCandles(candleKeys);
-  reloadAlerts();
   resetCooldowns();
   clearLogs();
 }
@@ -314,10 +313,9 @@ describe('BotEngine — broadcasts', () => {
 // ---------------------------------------------------------------------------
 describe('BotEngine — alert evaluation', () => {
   it('fires a price-above alert and broadcasts notify', () => {
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.broadcasts.length = 0;
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
     const notifyMsg = h.broadcasts.find((m) => m.type === 'notify');
@@ -329,23 +327,21 @@ describe('BotEngine — alert evaluation', () => {
     h.destroy();
   });
 
-  it('marks the alert as fired and updates persisted lastFiredAt', () => {
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
+  it('marks the alert as fired and updates lastFiredAt in the snapshot', () => {
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
-    const alertList = get(alerts);
-    expect(alertList).toHaveLength(1);
-    expect(alertList[0].lastFiredAt).not.toBeNull();
+    const snapshot = h.engine.getAlertsSnapshot();
+    expect(snapshot).toHaveLength(1);
+    expect(snapshot[0].lastFiredAt).not.toBeNull();
     h.destroy();
   });
 
   it('logs an alertDispatched entry when an alert fires', () => {
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
     const entries = get(logs);
     const dispatched = entries.filter((e) => e.kind === 'alertDispatched');
@@ -355,13 +351,10 @@ describe('BotEngine — alert evaluation', () => {
   });
 
   it('respects the alert cooldown — does not fire twice in quick succession', () => {
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
-    // Second tick within cooldown — only runs eval, price tick throttled too but
-    // even without throttle, cooldown blocks.
     h.priceFeeds[0].emitTick('bitcoin', 46000, 1_000_000 + 60_000);
     const entries = get(logs);
     const dispatched = entries.filter((e) => e.kind === 'alertDispatched');
@@ -370,24 +363,49 @@ describe('BotEngine — alert evaluation', () => {
   });
 
   it('does not fire alerts for disabled assets', () => {
-    addAlert({ asset: 'ethereum', interval: '1m', kind: 'above', value: 2000 } as NewAlert);
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']); // ethereum NOT enabled
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'ethereum', interval: '1m', kind: 'above', value: 2000 } as NewAlert);
     h.priceFeeds[0].emitTick('ethereum', 3000, 1_000_000);
     const entries = get(logs);
     expect(entries.filter((e) => e.kind === 'alertDispatched')).toHaveLength(0);
     h.destroy();
   });
 
-  it('picks up alerts added after refreshAlerts is called', () => {
+  it('picks up alerts added after feeds are started', () => {
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
     const entries = get(logs);
     expect(entries.filter((e) => e.kind === 'alertDispatched')).toHaveLength(1);
+    h.destroy();
+  });
+
+  it('broadcasts alertList on addAlert', () => {
+    const h = makeHarness();
+    h.engine.setEnabledAssets(['bitcoin']);
+    h.broadcasts.length = 0;
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
+    const msg = h.broadcasts.find((m) => m.type === 'alertList');
+    expect(msg).toBeDefined();
+    if (msg && msg.type === 'alertList') {
+      expect(msg.alerts).toHaveLength(1);
+      expect(msg.alerts[0].asset).toBe('bitcoin');
+    }
+    h.destroy();
+  });
+
+  it('removeAlert removes the alert from the snapshot and broadcasts', () => {
+    const h = makeHarness();
+    h.engine.setEnabledAssets(['bitcoin']);
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
+    const id = h.engine.getAlertsSnapshot()[0].id;
+    h.broadcasts.length = 0;
+    h.engine.removeAlert(id);
+    expect(h.engine.getAlertsSnapshot()).toHaveLength(0);
+    const msg = h.broadcasts.find((m) => m.type === 'alertList');
+    expect(msg).toBeDefined();
     h.destroy();
   });
 });
@@ -533,19 +551,16 @@ describe('BotEngine — candle + volume updates', () => {
 // Alert state after fire
 // ---------------------------------------------------------------------------
 describe('BotEngine — markFired behavior', () => {
-  it('stores lastFiredAt so a subsequent refreshAlerts does not lose it', () => {
-    addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
+  it('persists lastFiredAt across subsequent snapshots', () => {
     const h = makeHarness();
     h.engine.setEnabledAssets(['bitcoin']);
-    h.engine.refreshAlerts();
+    h.engine.addAlert({ asset: 'bitcoin', interval: '1m', kind: 'above', value: 40000 } as NewAlert);
     h.priceFeeds[0].emitTick('bitcoin', 45000, 1_000_000);
 
-    const before = get(alerts);
+    const before = h.engine.getAlertsSnapshot();
     expect(before[0].lastFiredAt).not.toBeNull();
 
-    // Simulate a tab CRUD event that triggers a refresh; lastFiredAt must persist.
-    h.engine.refreshAlerts();
-    const after = get(alerts);
+    const after = h.engine.getAlertsSnapshot();
     expect(after[0].lastFiredAt).toBe(before[0].lastFiredAt);
     h.destroy();
   });
