@@ -49,32 +49,26 @@ tayrax/
 │   │   ├── PriceCard.svelte
 │   │   ├── AlertForm.svelte
 │   │   ├── AlertList.svelte
-│   │   ├── NavMenu.svelte      # Clickable logo → dropdown nav (Dashboard / System / Logs)
+│   │   ├── NavMenu.svelte      # Clickable logo → dropdown nav; dispatches navigate event with view name
 │   │   ├── CoinSelector.svelte # Checkbox list of SUPPORTED_ASSETS; bitcoin locked; calls toggleAsset
 │   │   └── Chart.svelte        # SVG candlestick chart with SMA/BB overlays + RSI/MACD sub-pane
 │   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
-│   ├── App.svelte
-│   ├── System.svelte         # /system/ diagnostic page (browser caps + WS tests)
-│   ├── Logs.svelte           # /logs/ action-log viewer (reverse-chrono, filter, clear)
-│   ├── Help.svelte           # /help/ help page (how it works, warm-up notes)
+│   ├── App.svelte            # Persistent shell: core logic + view switching (dashboard / logs / system) + Help modal
+│   ├── System.svelte         # System diagnostic view (browser caps + WS tests) — rendered by App
+│   ├── Logs.svelte           # Action-log view (reverse-chrono, filter, clear) — rendered by App
+│   ├── Help.svelte           # Help content — rendered inside App's modal overlay
 │   ├── app.css
-│   ├── main.ts
-│   ├── system.ts             # Entry point for system/index.html
-│   ├── logs.ts               # Entry point for logs/index.html
-│   └── help.ts               # Entry point for help/index.html
+│   └── main.ts
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (stale-while-revalidate shell)
 │   ├── tayrax-logo.svg
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
-├── index.html                # Main app entry point
-├── system/index.html         # Diagnostic page entry (multi-page Vite app) → /system/
-├── logs/index.html           # Action-log page entry (multi-page Vite app) → /logs/
-├── help/index.html           # Help page entry (multi-page Vite app) → /help/
-├── vite.config.ts            # publicDir: 'static', base: TAYRAX_CDN env var (falls back to / in prod, localhost:5173 in dev), rollupOptions.input for each page
+├── index.html                # Single app entry point
+├── vite.config.ts            # publicDir: 'static', base: TAYRAX_CDN env var (falls back to / in prod, localhost:5173 in dev)
 ├── vitest.config.ts          # Vitest: jsdom env, svelte plugin, setupFiles
 ├── svelte.config.js
 ├── tsconfig.json
@@ -214,18 +208,21 @@ Both must stay in sync. When you add, change, or remove a documented behavior, u
 
 ---
 
-## Multi-page app
+## Single-page app — view switching
 
-The build has two entry points defined in `vite.config.ts` via `rollupOptions.input`:
+The app is a single HTML entry point (`index.html`). `App.svelte` is the permanent shell: it owns the header, all core logic (feeds, alerts, proposals), and a `currentView` variable that controls which view is rendered in the content area.
 
-| Entry | URL | Purpose |
+| View | Component | Purpose |
 |---|---|---|
-| `index.html` | `/` | Main trading dashboard (PWA) |
-| `system/index.html` | `/system/` | Diagnostic page: browser capabilities + live WebSocket tests |
-| `logs/index.html` | `/logs/` | Action-log viewer: reverse-chrono list of bot actions |
-| `help/index.html` | `/help/` | Help page: how it works, warm-up periods, badge meanings |
+| `'dashboard'` | inline in `App.svelte` | Main trading dashboard (default) |
+| `'logs'` | `src/Logs.svelte` | Action-log viewer: reverse-chrono list of bot actions |
+| `'system'` | `src/System.svelte` | Diagnostic page: browser capabilities + live WebSocket tests |
 
-All pages share `src/app.css`. The system and logs pages are self-contained (`src/System.svelte` + `src/system.ts`, `src/Logs.svelte` + `src/logs.ts`). The logs page reads the `logs` store from `src/lib/logs.ts`, which is the same store the main app writes to via `logAction` — cross-tab sync is handled by a `storage` event listener in `logs.ts`. Pages are navigable via the nav menu (NavMenu.svelte). When adding a new page, create its HTML file at `<name>/index.html` (project root level), register it in `vite.config.ts` under `rollupOptions.input`, and add its entry to the nav items in `NavMenu.svelte`. Page HTML files use absolute `/src/…` script paths so they resolve correctly from any subdirectory in both dev and build.
+`NavMenu.svelte` dispatches a `navigate` event with the target view name; `App.svelte` handles it by setting `currentView`. The URL does not change on navigation — there is no router.
+
+Help is a modal overlay (`showHelp` boolean in `App.svelte`). The `?` button in the header toggles it; clicking the backdrop or the close button dismisses it. `Help.svelte` renders only its content section — `App.svelte` provides the modal wrapper.
+
+When adding a new view, create its component under `src/`, add it to the `currentView` union type in `App.svelte`, add a branch to the view switch in the template, and add its entry to `NavMenu.svelte`'s `items` array.
 
 ---
 

@@ -1,22 +1,29 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 
   export let size: number = 28;
+  export let currentView: 'dashboard' | 'logs' | 'system' = 'dashboard';
 
   let open = false;
-  let current = '/';
   let wrapper: HTMLElement;
 
-  const items: { path: string; label: string }[] = [
-    { path: '/', label: 'Dashboard' },
-    { path: '/system/', label: 'System' },
-    { path: '/logs/', label: 'Logs' },
+  const dispatch = createEventDispatcher<{ navigate: 'dashboard' | 'logs' | 'system' }>();
+
+  const items: { view: 'dashboard' | 'logs' | 'system'; label: string }[] = [
+    { view: 'dashboard', label: 'Dashboard' },
+    { view: 'system', label: 'System' },
+    { view: 'logs', label: 'Logs' },
   ];
 
   function toggle(): void {
     open = !open;
+  }
+
+  function navigate(view: 'dashboard' | 'logs' | 'system'): void {
+    dispatch('navigate', view);
+    open = false;
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -30,7 +37,6 @@
   }
 
   onMount(() => {
-    current = window.location.pathname;
     window.addEventListener('keydown', handleKeydown);
     window.addEventListener('click', handleClickOutside);
   });
@@ -54,8 +60,8 @@
   {#if open}
     <ul class="dropdown" role="menu">
       {#each items as item}
-        <li role="none" class:active={current === item.path}>
-          <a role="menuitem" href={item.path}>{item.label}</a>
+        <li role="none" class:active={currentView === item.view}>
+          <button role="menuitem" type="button" on:click={() => navigate(item.view)}>{item.label}</button>
         </li>
       {/each}
     </ul>
@@ -92,16 +98,21 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     min-width: 10rem;
   }
-  .dropdown li a {
+  .dropdown li button {
     display: block;
+    width: 100%;
+    text-align: left;
     padding: 0.45rem 0.9rem 0.45rem 1rem;
     font-size: 0.875rem;
+    font: inherit;
     color: #aaa;
-    text-decoration: none;
+    background: none;
+    border: none;
     border-left: 2px solid transparent;
+    cursor: pointer;
   }
-  .dropdown li a:hover { color: #eee; background: #222; }
-  .dropdown li.active a {
+  .dropdown li button:hover { color: #eee; background: #222; }
+  .dropdown li.active button {
     color: #eee;
     border-left-color: #2563eb;
     background: #1e2a3a;

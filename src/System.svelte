@@ -1,8 +1,6 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
-  import NavMenu from './components/NavMenu.svelte';
-
   // ---------------------------------------------------------------------------
   // Types
   // ---------------------------------------------------------------------------
@@ -187,15 +185,6 @@
     { code: '4xxx', meaning: 'Application-defined — meaning depends on the specific API' },
   ];
 </script>
-
-<header class="top">
-  <div class="brand">
-    <NavMenu />
-    <span>tayrax</span>
-    <span class="sep">/</span>
-    <span class="page">system</span>
-  </div>
-</header>
 
 <main>
 
@@ -488,24 +477,6 @@
 </main>
 
 <style>
-  .top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid #222;
-    font-size: 0.9rem;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    color: #ccc;
-  }
-  .sep { color: #444; }
-  .page { color: #888; font-weight: 400; }
-
   main {
     max-width: 860px;
     margin: 0 auto;

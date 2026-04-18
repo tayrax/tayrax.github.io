@@ -8,6 +8,9 @@
   import NavMenu from './components/NavMenu.svelte';
   import Chart from './components/Chart.svelte';
   import CoinSelector from './components/CoinSelector.svelte';
+  import Logs from './Logs.svelte';
+  import System from './System.svelte';
+  import Help from './Help.svelte';
   import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
   import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
@@ -34,6 +37,8 @@
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
+  let currentView: 'dashboard' | 'logs' | 'system' = 'dashboard';
+  let showHelp = false;
 
   // Track enabled assets — declared early so runEvaluation can reference it safely
   let mounted = false;
@@ -202,17 +207,18 @@
 
 <header class="top">
   <div class="brand">
-    <NavMenu size={32} />
+    <NavMenu size={32} {currentView} on:navigate={(e) => (currentView = e.detail)} />
     <h1>tayrax</h1>
   </div>
   <div class="right">
     <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
       {status}
     </div>
-    <a class="help-btn" href="/help/" aria-label="Help">?</a>
+    <button class="help-btn" type="button" aria-label="Help" on:click={() => (showHelp = true)}>?</button>
   </div>
 </header>
 
+{#if currentView === 'dashboard'}
 <main>
   {#if permission !== 'granted'}
     <div class="perm">
@@ -258,6 +264,21 @@
     <div class="list"><AlertList {selectedInterval} /></div>
   </section>
 </main>
+{:else if currentView === 'logs'}
+<Logs />
+{:else if currentView === 'system'}
+<System />
+{/if}
+
+{#if showHelp}
+  <div class="modal-wrap">
+    <button class="modal-backdrop" type="button" aria-label="Close help" on:click={() => (showHelp = false)}></button>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Help">
+      <button class="modal-close" type="button" on:click={() => (showHelp = false)}>×</button>
+      <Help />
+    </div>
+  </div>
+{/if}
 
 <style>
   :global(body) {
@@ -293,9 +314,55 @@
     background: #2a2a2a;
     color: #aaa;
     font-size: 0.8rem;
-    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
   }
   .help-btn:hover { background: #333; color: #fff; }
+
+  .modal-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    border: none;
+    cursor: default;
+    padding: 0;
+  }
+  .modal {
+    position: relative;
+    z-index: 1;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+  .modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    font-family: inherit;
+  }
+  .modal-close:hover { color: #ccc; }
 
   main {
     max-width: 960px;

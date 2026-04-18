@@ -31,9 +31,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
-          system: resolve(__dirname, 'system/index.html'),
-          logs: resolve(__dirname, 'logs/index.html'),
-          help: resolve(__dirname, 'help/index.html'),
         },
       },
     },
