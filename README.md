@@ -46,3 +46,11 @@ require a minimum candle history to compute:
 
 With a successful backfill these thresholds are met at load time. Without
 backfill, expect a warm-up period before indicator alerts can fire.
+
+### App updates
+
+The app checks for a new version every 4 hours by polling the service worker
+registration. When an update is ready (the new service worker is installed and
+waiting), an **update** badge appears in the top-right corner of the header.
+Click it to apply the update and reload. If you never click it, the old version
+continues running until the next full page reload.

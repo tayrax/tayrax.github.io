@@ -19,6 +19,8 @@
     <dd>On startup, up to 200 recent 1-minute candles are fetched from Binance REST to seed the chart. SMA(20), SMA(50), Bollinger Bands, RSI(14), and MACD(12,26,9) are computed from this history. If the backfill fetch fails, indicators become available as live candles arrive.</dd>
     <dt>Indicator alerts</dt>
     <dd>RSI, MACD crossover, and Bollinger Band breakout alerts require at least 26–34 candles of history before they can fire (MACD needs 26 + 9 signal periods). A warm-up period applies if the REST backfill is unavailable.</dd>
+    <dt>App updates</dt>
+    <dd>The app checks for a new version every 4 hours. When an update is ready, an <em>update</em> badge appears in the top-right corner. Click it to reload with the new version.</dd>
   </dl>
 </section>
 

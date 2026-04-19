@@ -44,6 +44,7 @@ tayrax/
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
 │   │   ├── backfill.ts       # Binance REST /api/v3/klines historical seed on startup
 │   │   ├── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
+│   │   ├── sw-update.ts      # SW update check: updateWaiting store, watchForUpdates(), applyUpdate()
 │   │   └── enabled-assets.ts # enabledAssets store (persisted), toggleAsset(), grace-period pruning
 │   ├── components/
 │   │   ├── PriceCard.svelte
@@ -63,7 +64,7 @@ tayrax/
 │   └── main.ts
 ├── static/                   # Vite publicDir — copied to site root at build
 │   ├── manifest.json         # PWA manifest
-│   ├── sw.js                 # Service worker (stale-while-revalidate shell)
+│   ├── sw.js                 # Service worker (stale-while-revalidate shell); skipWaiting only on 'SKIP_WAITING' message
 │   ├── tayrax-logo.svg
 │   └── tayrax-logo.png
 ├── .github/workflows/deploy.yml  # GitHub Pages deploy (main → Pages)
@@ -249,6 +250,7 @@ Rules:
 - **Indicator warm-up** — Indicators are null until their minimum candle counts are met: SMA(n) / BB(n) need n candles; RSI(14) needs 15; MACD(12,26,9) needs 34 (26 + 9 − 1). With a successful backfill these are met immediately at load time. Indicator-based alert rules return null (skip) when the required data isn't available yet — they do not fire false positives on insufficient history.
 - **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
 - **Disabled-asset grace period** — When a coin is toggled off, its `disabledAt` timestamp is stored under `STORAGE_KEYS.disabledAt`. Persisted price/candle data is kept for `DISABLED_ASSET_PRUNE_AFTER_MS` (3 days). On the next app startup after that window, `getExpiredDisabledAssets()` identifies expired entries and `pruneAssets` / `pruneCandles` / `pruneVolumes` / `clearExpiredDisabledAt` remove them. Re-enabling within 3 days recovers all history instantly without a new backfill.
+- **SW update check** — `watchForUpdates(registration)` in `src/lib/sw-update.ts` is called from `main.ts` (PROD only) after the SW registers. It polls `registration.update()` every `SW_UPDATE_INTERVAL_MS` (4 hours) and listens for `updatefound` → `statechange === 'installed'`. The `updateWaiting` readable store is set to `true` only when `navigator.serviceWorker.controller` is non-null (i.e. this is an upgrade, not the first install). `App.svelte` renders an **update** pill badge in the header when the store is true; clicking it calls `applyUpdate()`, which posts `'SKIP_WAITING'` to the waiting SW and reloads on `controllerchange`. Do not add `self.skipWaiting()` back to the `install` handler in `sw.js` — it would bypass the waiting state and make the badge impossible.
 
 ---
 

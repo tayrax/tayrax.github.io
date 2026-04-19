@@ -33,6 +33,7 @@
     requestPermission,
     type NotificationPermissionState
   } from './lib/notifications';
+  import { updateWaiting, applyUpdate } from './lib/sw-update';
 
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
@@ -214,6 +215,9 @@
     <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
       {status}
     </div>
+    {#if $updateWaiting}
+      <button class="update-btn" type="button" on:click={applyUpdate}>update</button>
+    {/if}
     <button class="help-btn" type="button" aria-label="Help" on:click={() => (showHelp = true)}>?</button>
   </div>
 </header>
@@ -303,6 +307,17 @@
   }
   .status.open { background: #0f2e1d; color: #4ade80; }
   .status.closed { background: #3a1f1f; color: #f87171; }
+  .update-btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: #1a3a2a;
+    color: #4ade80;
+    border: 1px solid #2a5a3a;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .update-btn:hover { background: #1f4a34; color: #86efac; }
   .help-btn {
     display: flex;
     align-items: center;
