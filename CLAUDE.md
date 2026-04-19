@@ -254,6 +254,14 @@ Rules:
 
 ---
 
+## Tool Use
+
+- Prefer `Grep`, `Glob`, and `Read` directly for targeted searches — do not spawn subagents just to look something up
+- Only use the `Agent` tool when the task genuinely requires unpredictable multi-step exploration (3+ search rounds that depend on each other)
+- Subagent sessions multiply token costs; the default should always be direct tools first
+
+---
+
 ## What to Avoid
 
 - Do not add a backend or server — this is a pure client-side app
