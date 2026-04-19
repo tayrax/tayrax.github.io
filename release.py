@@ -50,7 +50,7 @@ def update_manifest_json(version):
 
 def latest_git_tag():
     result = subprocess.run(
-        ["git", "tag", "-l"],
+        ["git", "tag", "-l", "release/*"],
         capture_output=True,
         text=True,
         cwd=WORKSPACE,
