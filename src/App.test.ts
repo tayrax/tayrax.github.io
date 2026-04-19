@@ -62,6 +62,11 @@ describe('App — layout', () => {
     const { getByText } = render(App);
     expect(getByText('Add alert')).toBeInTheDocument();
   });
+
+  it('does not show the update badge by default', () => {
+    const { queryByText } = render(App);
+    expect(queryByText('update')).not.toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
