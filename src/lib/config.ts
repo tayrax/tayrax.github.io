@@ -91,7 +91,7 @@ export const CANDLE_STORAGE_KEYS: Record<CandleInterval, string> = {
 // Grace period before disabled-asset data is pruned from storage (3 days)
 export const DISABLED_ASSET_PRUNE_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
 
-export const SW_UPDATE_INTERVAL_MS = 4 * 60 * 60 * 1000;
+export const SW_UPDATE_INTERVAL_MS = 30 * 60 * 1000;
 
 export const STORAGE_KEYS = {
   alerts: 'tayrax.alerts.v1',
