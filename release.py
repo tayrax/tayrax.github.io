@@ -21,6 +21,7 @@ WORKSPACE = Path(__file__).parent
 
 PACKAGE_JSON  = WORKSPACE / "package.json"
 MANIFEST_JSON = WORKSPACE / "static" / "manifest.json"
+SW_JS         = WORKSPACE / "static" / "sw.js"
 
 VERSION_RE = re.compile(r"^\d+\.\d+(\.\d+)?(-\d+)?$")
 
@@ -46,6 +47,18 @@ def update_manifest_json(version):
     data["version_name"] = version
     MANIFEST_JSON.write_text(json.dumps(data, indent=2) + "\n")
     print(f"  updated    static/manifest.json  {current} -> {version}")
+
+
+def update_sw_js(version):
+    text = SW_JS.read_text()
+    new_text = re.sub(r"const APP_VERSION = '[^']*';", f"const APP_VERSION = '{version}';", text)
+    if new_text == text:
+        print(f"  unchanged  static/sw.js ({version})")
+        return
+    current = re.search(r"const APP_VERSION = '([^']*)';", text)
+    current_ver = current.group(1) if current else "?"
+    SW_JS.write_text(new_text)
+    print(f"  updated    static/sw.js  {current_ver} -> {version}")
 
 
 def latest_git_tag():
@@ -89,6 +102,7 @@ def main():
 
     update_package_json(version)
     update_manifest_json(version)
+    update_sw_js(version)
 
 
 if __name__ == "__main__":
