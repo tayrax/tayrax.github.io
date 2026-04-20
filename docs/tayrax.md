@@ -139,7 +139,7 @@ Adding a new coin = adding one string to the list.
 ### Phase 3 — Semi-Automatic Trading
 > The bot suggests actions based on indicator signals. Exchange integration and order execution are deferred to Phase 3b; this phase focuses on proposal logic and auditability.
 
-**Phase 3a — Trade Proposals (no exchange account required):**
+**Phase 3a — Trade Proposals ✅ Completed (2026-04-20) (no exchange account required):**
 - `src/lib/proposals.ts` evaluates indicator state per asset each candle close and emits `TradeProposal` objects when signal conditions are met
 - Signal triggers: RSI oversold/overbought, MACD bullish/bearish crossover, Bollinger Band breakout
 - Each proposal is logged via `logAction('tradeProposed', ...)` and appears on the Logs page

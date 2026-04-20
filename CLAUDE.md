@@ -89,7 +89,7 @@ The project is built incrementally. Do not implement features from a later phase
 
 1. **Phase 1 — Simple Alerts:** live prices + user-defined alert rules + browser notifications ✅ Complete
 2. **Phase 2 — Technical Indicators:** OHLCV charts, RSI/SMA/MACD/Bollinger Bands, signal alerts ✅ Complete
-3. **Phase 3 — Semi-Automatic Trading:** indicator-driven trade proposals logged to action log (Phase 3a, no exchange required); exchange API integration + order execution (Phase 3b)
+3. **Phase 3 — Semi-Automatic Trading:** indicator-driven trade proposals logged to action log (Phase 3a ✅ Complete, no exchange required); exchange API integration + order execution (Phase 3b)
 4. **Phase 4 — Fully Automatic Trading:** autonomous execution, paper trading mode, risk management
 
 ---
