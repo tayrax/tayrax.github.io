@@ -196,6 +196,8 @@ The repo's Pages source must be set to **Source: GitHub Actions** for the deploy
 
 Keep this file up to date. Whenever you make a change that affects project structure, tooling, conventions, or environment setup, update the relevant section. If no section fits, add one.
 
+Whenever a deliberate UI layout or interaction decision is made (badge order, navigation behaviour, modal patterns, etc.), add or update an entry in `## UI Conventions` explaining the rule and the reason behind it.
+
 ---
 
 ## User-facing documentation
@@ -261,6 +263,12 @@ Rules:
 - Prefer `Grep`, `Glob`, and `Read` directly for targeted searches — do not spawn subagents just to look something up
 - Only use the `Agent` tool when the task genuinely requires unpredictable multi-step exploration (3+ search rounds that depend on each other)
 - Subagent sessions multiply token costs; the default should always be direct tools first
+
+---
+
+## UI Conventions
+
+- **Header badge order** — badges in the `.right` header cluster grow leftward. Stable anchors (`open`/`closed` status, `?` help button) stay rightmost so their positions never shift. Conditional badges (e.g. `update`) are inserted to the left of the status badge. Do not reorder them to put conditional badges after the status badge.
 
 ---
 

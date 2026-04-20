@@ -212,12 +212,12 @@
     <h1>tayrax</h1>
   </div>
   <div class="right">
-    <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
-      {status}
-    </div>
     {#if $updateWaiting}
       <button class="update-btn" type="button" on:click={applyUpdate}>update</button>
     {/if}
+    <div class="status" class:open={status === 'open'} class:closed={status === 'closed'}>
+      {status}
+    </div>
     <button class="help-btn" type="button" aria-label="Help" on:click={() => (showHelp = true)}>?</button>
   </div>
 </header>
