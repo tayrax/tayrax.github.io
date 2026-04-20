@@ -1,4 +1,3 @@
-/docker/data
 __pycache__
 node_modules
 dist
