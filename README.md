@@ -9,8 +9,8 @@ Hosted at [tayrax.github.io](https://tayrax.github.io).
 
 ### Data freshness
 
-Prices are streamed in real time from the CoinCap WebSocket feed. To avoid
-flooding the store, a tick is processed at most once every **5 seconds per
+Prices are streamed in real time from the Binance miniTicker WebSocket feed. To
+avoid flooding the store, a tick is processed at most once every **5 seconds per
 asset** — so the displayed price can lag up to 5 seconds behind the live market.
 This interval is tunable via `PRICE_TICK_MIN_INTERVAL_MS` in `src/lib/config.ts`.
 
@@ -30,12 +30,12 @@ alerts become active.
 
 ### Charts and technical indicators
 
-On startup, up to 200 recent 1-minute candles are fetched from the Binance
-REST API (`/api/v3/klines`) for each monitored asset. This seeds the chart
-and technical indicators (SMA20, SMA50, Bollinger Bands, RSI(14),
-MACD(12,26,9)) immediately. If the backfill fetch fails (network error, rate
-limit), these indicators become available as live candles arrive via the
-WebSocket stream instead.
+On startup, up to 200 recent candles per interval are fetched from the Binance
+REST API (`/api/v3/klines`) for each monitored asset across all chart intervals
+(`1m`, `15m`, `1h`, `4h`, `1d`). This seeds the chart and technical indicators
+(SMA20, SMA50, Bollinger Bands, RSI(14), MACD(12,26,9)) immediately. If the
+backfill fetch fails (network error, rate limit), these indicators become
+available as live candles arrive via the WebSocket stream instead.
 
 Indicator-based alert rules (RSI, MACD crossover, Bollinger Band breakout)
 require a minimum candle history to compute:
@@ -47,10 +47,19 @@ require a minimum candle history to compute:
 With a successful backfill these thresholds are met at load time. Without
 backfill, expect a warm-up period before indicator alerts can fire.
 
+### Trade proposals
+
+When indicator conditions are met on a closed candle, the app emits a trade
+proposal and records it in the action log (Logs page). Triggers: RSI oversold
+(<30) or overbought (>70), MACD bullish or bearish crossover, Bollinger Band
+breakout above or below. Each signal is subject to a **30-minute cooldown per
+asset per interval** to avoid flooding the log. No exchange account is required
+— proposals are informational only.
+
 ### App updates
 
-The app checks for a new version every 4 hours by polling the service worker
-registration. When an update is ready (the new service worker is installed and
-waiting), an **update** badge appears in the top-right corner of the header.
-Click it to apply the update and reload. If you never click it, the old version
-continues running until the next full page reload.
+The app checks for a new version every **30 minutes** by polling the service
+worker registration. When an update is ready (the new service worker is
+installed and waiting), an **update** badge appears in the top-right corner of
+the header. Click it to apply the update and reload. If you never click it, the
+old version continues running until the next full page reload.

@@ -207,6 +207,8 @@ Any behavior that affects how the user perceives the app — update frequency, w
 
 Both must stay in sync. When you add, change, or remove a documented behavior, update both. Never write to one without checking the other.
 
+**Tone:** Help entries are written for users, not developers. Avoid internal names (`WebSocket`, `REST`, `klines`, `miniTicker`, candle counts, signal period math). Explain what the user will observe and why, not how it is implemented. `README.md` Notes may be more technical since developers also read it, but Help.svelte must stay user-friendly.
+
 ---
 
 ## Single-page app — view switching

@@ -7,20 +7,22 @@
 <section>
   <h2>How it works</h2>
   <dl>
-    <dt>Price updates</dt>
-    <dd>Prices are streamed live from {PRICE_PROVIDER === 'binance' ? "Binance's miniTicker" : "CoinCap's"} WebSocket feed and refreshed at most every 5 seconds per asset. The displayed price may lag up to 5 seconds behind the live market.</dd>
-    <dt>Volume updates</dt>
-    <dd>Volume data comes from Binance's 1-minute kline stream and updates once per minute, on closed-candle events.</dd>
+    <dt>Prices</dt>
+    <dd>Prices update every few seconds from a live {PRICE_PROVIDER === 'binance' ? 'Binance' : 'CoinCap'} feed. What you see is never more than 5 seconds old.</dd>
+    <dt>Volume</dt>
+    <dd>Volume figures reflect the most recently completed 1-minute window. They update once per minute.</dd>
     <dt>Cached badge</dt>
-    <dd>A <em>cached</em> label appears on a price card when no update has been received for more than 30 seconds, indicating a stale or disconnected feed.</dd>
+    <dd>The <em>cached</em> label on a price card means the live feed has gone quiet for more than 30 seconds. Your internet connection may be intermittent, or the data source is temporarily unavailable.</dd>
     <dt>Volume-spike alerts</dt>
-    <dd>Volume-spike detection requires ≥10 closed 1-minute candles (≈10 minutes of runtime) before a rule can fire. Expect a warm-up period after the app loads.</dd>
+    <dd>These alerts need about 10 minutes of data after the app loads before they can fire. This warm-up period is intentional — it prevents false alarms on a cold start.</dd>
     <dt>Charts and indicators</dt>
-    <dd>On startup, up to 200 recent 1-minute candles are fetched from Binance REST to seed the chart. SMA(20), SMA(50), Bollinger Bands, RSI(14), and MACD(12,26,9) are computed from this history. If the backfill fetch fails, indicators become available as live candles arrive.</dd>
+    <dd>When you open the app, recent price history is loaded automatically so charts and indicators (RSI, MACD, Bollinger Bands) are ready immediately. If that initial load fails, everything still works — it just takes a few minutes of live data to catch up.</dd>
     <dt>Indicator alerts</dt>
-    <dd>RSI, MACD crossover, and Bollinger Band breakout alerts require at least 26–34 candles of history before they can fire (MACD needs 26 + 9 signal periods). A warm-up period applies if the REST backfill is unavailable.</dd>
+    <dd>RSI, MACD, and Bollinger Band alerts need a short warm-up period to gather enough history before they can fire. With a normal internet connection this is invisible — the data loads in the background before you notice anything.</dd>
+    <dt>Trade proposals</dt>
+    <dd>When the indicators suggest a potential trade opportunity, the app logs a proposal on the <em>Logs</em> page. These are suggestions only — no orders are placed and no exchange account is needed. Each type of signal is rate-limited to one proposal per 30 minutes per coin to keep the log readable.</dd>
     <dt>App updates</dt>
-    <dd>The app checks for a new version every 4 hours. When an update is ready, an <em>update</em> badge appears in the top-right corner. Click it to reload with the new version.</dd>
+    <dd>The app silently checks for updates every 30 minutes. When a new version is ready, an <em>update</em> badge appears in the top-right corner. Click it to reload — otherwise the current version keeps running until you close the tab.</dd>
   </dl>
 </section>
 
