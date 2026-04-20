@@ -35,6 +35,8 @@
   } from './lib/notifications';
   import { updateWaiting, applyUpdate } from './lib/sw-update';
 
+  const appStartTime: number = Date.now();
+
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
@@ -271,7 +273,7 @@
 {:else if currentView === 'logs'}
 <Logs />
 {:else if currentView === 'system'}
-<System />
+<System startTime={appStartTime} />
 {/if}
 
 {#if showHelp}

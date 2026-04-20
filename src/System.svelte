@@ -1,6 +1,34 @@
 <!-- Copyright (c) Jeremías Casteglione <jrmsdev@gmail.com> -->
 <!-- See LICENSE file. -->
 <script lang="ts">
+  import { onDestroy } from 'svelte';
+
+  // ---------------------------------------------------------------------------
+  // Props
+  // ---------------------------------------------------------------------------
+  export let startTime: number = Date.now();
+
+  // ---------------------------------------------------------------------------
+  // Uptime
+  // ---------------------------------------------------------------------------
+  let uptimeLabel = '';
+
+  function formatUptime(ms: number): string {
+    const totalMin = Math.floor(ms / 60_000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m`;
+    return '< 1m';
+  }
+
+  function tick(): void {
+    uptimeLabel = formatUptime(Date.now() - startTime);
+  }
+  tick();
+  const uptimeInterval = setInterval(tick, 60_000);
+  onDestroy(() => clearInterval(uptimeInterval));
+
   // ---------------------------------------------------------------------------
   // Types
   // ---------------------------------------------------------------------------
@@ -192,18 +220,22 @@
        App identity
   ======================================================================= -->
   <section>
-    <div class="cap-grid">
-      <div class="cap-row">
-        <span class="cap-name">App version</span>
+    <div class="info-grid">
+      <div class="info-row">
+        <span class="info-name">App version</span>
         <span class="val">{appVersion}</span>
       </div>
-      <div class="cap-row">
-        <span class="cap-name">App build</span>
+      <div class="info-row">
+        <span class="info-name">App build</span>
         <span class="val">{appBuild}</span>
       </div>
-      <div class="cap-row">
-        <span class="cap-name">CDN</span>
+      <div class="info-row">
+        <span class="info-name">CDN</span>
         <span class="val">{appCdn}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-name">Uptime</span>
+        <span class="val">{uptimeLabel}</span>
       </div>
     </div>
   </section>
@@ -213,22 +245,22 @@
   ======================================================================= -->
   <section>
     <h2>Browser capabilities</h2>
-    <div class="cap-grid">
-      <div class="cap-row">
-        <span class="cap-name">WebSocket API</span>
+    <div class="info-grid">
+      <div class="info-row">
+        <span class="info-name">WebSocket API</span>
         <span class="badge" class:ok={wsSupported} class:fail={!wsSupported}>
           {wsSupported ? 'supported' : 'not supported'}
         </span>
       </div>
-      <div class="cap-row">
-        <span class="cap-name">Notifications API</span>
+      <div class="info-row">
+        <span class="info-name">Notifications API</span>
         <span class="badge" class:ok={notifSupported} class:fail={!notifSupported}>
           {notifSupported ? 'supported' : 'not supported'}
         </span>
       </div>
       {#if notifSupported}
-        <div class="cap-row">
-          <span class="cap-name">Notification permission</span>
+        <div class="info-row">
+          <span class="info-name">Notification permission</span>
           <span
             class="badge"
             class:ok={notifPermission === 'granted'}
@@ -239,14 +271,14 @@
           </span>
         </div>
       {/if}
-      <div class="cap-row">
-        <span class="cap-name">Service Worker API</span>
+      <div class="info-row">
+        <span class="info-name">Service Worker API</span>
         <span class="badge" class:ok={swSupported} class:warn={!swSupported}>
           {swSupported ? 'supported' : 'not supported'}
         </span>
       </div>
-      <div class="cap-row">
-        <span class="cap-name">localStorage</span>
+      <div class="info-row">
+        <span class="info-name">localStorage</span>
         <span class="badge" class:ok={localStorageOk} class:fail={!localStorageOk}>
           {localStorageOk ? 'available' : 'unavailable'}
         </span>
@@ -518,8 +550,8 @@
   .badge.outcome { border-radius: 4px; }
 
   /* --- Browser capabilities --- */
-  .cap-grid { display: flex; flex-direction: column; gap: 0.4rem; }
-  .cap-row {
+  .info-grid { display: flex; flex-direction: column; gap: 0.4rem; }
+  .info-row {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -528,7 +560,7 @@
     border-radius: 5px;
     border: 1px solid #222;
   }
-  .cap-name { font-size: 0.85rem; color: #bbb; flex: 1; }
+  .info-name { font-size: 0.85rem; color: #bbb; flex: 1; }
 
   /* --- Buttons --- */
   .btn-run-all {
