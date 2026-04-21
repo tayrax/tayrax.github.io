@@ -31,6 +31,18 @@
   type SubPane = 'rsi' | 'macd';
   let subPane: SubPane = 'rsi';
 
+  // --- indicator parameters (user-configurable) ---
+  let smaFast = 20;
+  let smaSlow = 50;
+  let bbPeriod = 20;
+  let bbStdDev = 2;
+  let rsiPeriod = 14;
+  let macdFastP = 12;
+  let macdSlowP = 26;
+  let macdSignalP = 9;
+
+  let showSettings = false;
+
   $: assetCandles = candleMaps[selectedInterval][asset] ?? [];
   $: visible = assetCandles.slice(-VISIBLE);
 
@@ -57,8 +69,8 @@
 
   // --- overlays ---
   // SMA/EMA computed over the full history, projected onto visible window
-  $: sma20vals = computeLineOverlay(assetCandles, (s) => sma(s, 20));
-  $: sma50vals = computeLineOverlay(assetCandles, (s) => sma(s, 50));
+  $: sma20vals = computeLineOverlay(assetCandles, (s) => sma(s, smaFast));
+  $: sma50vals = computeLineOverlay(assetCandles, (s) => sma(s, smaSlow));
 
   function computeLineOverlay(
     all: OHLCVCandle[],
@@ -90,11 +102,11 @@
 
   // Bollinger band area path (upper → right → lower → left)
   $: bbUpperVals = computeLineOverlay(assetCandles, (s) => {
-    const b = bollingerBands(s, 20);
+    const b = bollingerBands(s, bbPeriod, bbStdDev);
     return b ? b.upper : null;
   });
   $: bbLowerVals = computeLineOverlay(assetCandles, (s) => {
-    const b = bollingerBands(s, 20);
+    const b = bollingerBands(s, bbPeriod, bbStdDev);
     return b ? b.lower : null;
   });
 
@@ -131,8 +143,8 @@
   }
 
   // --- sub-pane: RSI ---
-  $: rsiVal = rsi(assetCandles, 14);
-  $: rsiVals = computeLineOverlay(assetCandles, (s) => rsi(s, 14));
+  $: rsiVal = rsi(assetCandles, rsiPeriod);
+  $: rsiVals = computeLineOverlay(assetCandles, (s) => rsi(s, rsiPeriod));
 
   function rsiLinePoints(vals: (number | null)[]): string {
     const pts: string[] = [];
@@ -147,15 +159,13 @@
   }
 
   // --- sub-pane: MACD ---
-  $: macdResult = macd(assetCandles);
+  $: macdResult = macd(assetCandles, macdFastP, macdSlowP, macdSignalP);
   type MACDPoint = { macd: number | null; signal: number | null; histogram: number | null };
-  $: macdVals = computeMACDOverlay(assetCandles);
-
-  function computeMACDOverlay(all: OHLCVCandle[]): MACDPoint[] {
+  $: macdVals = (() => {
     const result: MACDPoint[] = [];
-    const start = Math.max(0, all.length - VISIBLE);
-    for (let i = start; i < all.length; i++) {
-      const m = macd(all.slice(0, i + 1));
+    const start = Math.max(0, assetCandles.length - VISIBLE);
+    for (let i = start; i < assetCandles.length; i++) {
+      const m = macd(assetCandles.slice(0, i + 1), macdFastP, macdSlowP, macdSignalP);
       result.push({
         macd: m ? m.macd : null,
         signal: m ? m.signal : null,
@@ -163,7 +173,7 @@
       });
     }
     return result;
-  }
+  })();
 
   $: macdMin = macdVals.reduce((m, p) => {
     const v = p.histogram ?? p.macd;
@@ -221,8 +231,41 @@
         on:click={() => (subPane = 'macd')}
         type="button"
       >MACD</button>
+      <span class="sep"></span>
+      <button
+        class="pane-btn"
+        class:active={showSettings}
+        on:click={() => (showSettings = !showSettings)}
+        type="button"
+        title="Indicator settings"
+      >⚙</button>
     </div>
   </div>
+
+  {#if showSettings}
+    <div class="settings-panel">
+      <fieldset class="settings-group">
+        <legend>SMA</legend>
+        <label>Fast <input type="number" bind:value={smaFast} min="2" max="500" /></label>
+        <label>Slow <input type="number" bind:value={smaSlow} min="2" max="500" /></label>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend>BB</legend>
+        <label>Period <input type="number" bind:value={bbPeriod} min="2" max="500" /></label>
+        <label>StdDev <input type="number" bind:value={bbStdDev} min="0.5" max="5" step="0.5" /></label>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend>RSI</legend>
+        <label>Period <input type="number" bind:value={rsiPeriod} min="2" max="100" /></label>
+      </fieldset>
+      <fieldset class="settings-group">
+        <legend>MACD</legend>
+        <label>Fast <input type="number" bind:value={macdFastP} min="2" max="100" /></label>
+        <label>Slow <input type="number" bind:value={macdSlowP} min="2" max="200" /></label>
+        <label>Signal <input type="number" bind:value={macdSignalP} min="2" max="50" /></label>
+      </fieldset>
+    </div>
+  {/if}
 
   {#if visible.length === 0}
     <div class="empty">Waiting for candle data…</div>
@@ -312,11 +355,11 @@
       <!-- Legend -->
       <g transform="translate({PADDING.left + 4}, {PADDING.top + 14})">
         <rect width="10" height="2" y="-1" fill="#f59e0b" />
-        <text x="14" y="4" fill="#f59e0b" font-size="9">SMA20</text>
+        <text x="14" y="4" fill="#f59e0b" font-size="9">SMA{smaFast}</text>
         <rect x="54" width="10" height="2" y="-1" fill="#22d3ee" />
-        <text x="68" y="4" fill="#22d3ee" font-size="9">SMA50</text>
+        <text x="68" y="4" fill="#22d3ee" font-size="9">SMA{smaSlow}</text>
         <rect x="108" width="10" height="2" y="-1" fill="#6366f1" />
-        <text x="122" y="4" fill="#6366f1" font-size="9">BB20</text>
+        <text x="122" y="4" fill="#6366f1" font-size="9">BB{bbPeriod}</text>
       </g>
 
       <!-- Sub-pane divider -->
@@ -336,7 +379,7 @@
         <line x1={PADDING.left} y1={y30} x2={PADDING.left + innerW} y2={y30} stroke="#4ade80" stroke-width="1" stroke-dasharray="3,3" opacity="0.4" />
         <text x={PADDING.left - 4} y={y70 + 4} text-anchor="end" fill="#666" font-size="9">70</text>
         <text x={PADDING.left - 4} y={y30 + 4} text-anchor="end" fill="#666" font-size="9">30</text>
-        <text x={PADDING.left + 2} y={MAIN_H + SUB_PAD_TOP + 8} fill="#888" font-size="9">RSI(14)</text>
+        <text x={PADDING.left + 2} y={MAIN_H + SUB_PAD_TOP + 8} fill="#888" font-size="9">RSI({rsiPeriod})</text>
         {#if rsiVals.some((v) => v !== null)}
           <polyline
             points={rsiLinePoints(rsiVals)}
@@ -360,7 +403,7 @@
         <!-- MACD sub-pane -->
         {@const midY = MAIN_H + SUB_PAD_TOP + (SUB_H - SUB_PAD_TOP - SUB_PAD_BOTTOM) / 2}
         <line x1={PADDING.left} y1={midY} x2={PADDING.left + innerW} y2={midY} stroke="#333" stroke-width="1" />
-        <text x={PADDING.left + 2} y={MAIN_H + SUB_PAD_TOP + 8} fill="#888" font-size="9">MACD(12,26,9)</text>
+        <text x={PADDING.left + 2} y={MAIN_H + SUB_PAD_TOP + 8} fill="#888" font-size="9">MACD({macdFastP},{macdSlowP},{macdSignalP})</text>
         <!-- Histogram bars -->
         {#each macdVals as p, i}
           {#if p.histogram !== null}
@@ -461,4 +504,52 @@
     font-size: 0.85rem;
   }
   svg { display: block; width: 100%; }
+
+  .settings-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #1a1a1a;
+    background: #0d0d0d;
+  }
+  .settings-group {
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem 0.35rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0;
+  }
+  .settings-group legend {
+    font-size: 0.65rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 0.2rem;
+  }
+  .settings-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    color: #888;
+  }
+  .settings-group input[type='number'] {
+    width: 3.5rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 3px;
+    color: #ccc;
+    font-size: 0.68rem;
+    font-family: inherit;
+    padding: 0.1rem 0.3rem;
+    text-align: right;
+  }
+  .settings-group input[type='number']:focus {
+    outline: none;
+    border-color: #4c3d8a;
+    color: #fff;
+  }
 </style>
