@@ -33,9 +33,14 @@ alerts become active.
 On startup, up to 200 recent candles per interval are fetched from the Binance
 REST API (`/api/v3/klines`) for each monitored asset across all chart intervals
 (`1m`, `15m`, `1h`, `4h`, `1d`). This seeds the chart and technical indicators
-(SMA20, SMA50, Bollinger Bands, RSI(14), MACD(12,26,9)) immediately. If the
-backfill fetch fails (network error, rate limit), these indicators become
+(SMA, EMA, Bollinger Bands, RSI, MACD — using their default periods) immediately.
+If the backfill fetch fails (network error, rate limit), these indicators become
 available as live candles arrive via the WebSocket stream instead.
+
+Chart indicator periods are user-configurable per chart via the ⚙ button
+(defaults: SMA 20/50, EMA 12/26, BB 20/2σ, RSI 14, MACD 12/26/9). These
+settings are per-session and reset on page reload. Alert and proposal logic
+always uses the fixed canonical defaults regardless of chart settings.
 
 Indicator-based alert rules (RSI, MACD crossover, Bollinger Band breakout)
 require a minimum candle history to compute:

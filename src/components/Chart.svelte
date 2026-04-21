@@ -4,7 +4,7 @@
   import { onDestroy } from 'svelte';
   import { candleStores } from '../lib/candles';
   import { CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from '../lib/config';
-  import { sma, rsi, macd, bollingerBands } from '../lib/indicators';
+  import { sma, ema, rsi, macd, bollingerBands } from '../lib/indicators';
   import type { OHLCVCandle, CandleMap } from '../lib/candles';
 
   export let asset: string;
@@ -34,6 +34,8 @@
   // --- indicator parameters (user-configurable) ---
   let smaFast = 20;
   let smaSlow = 50;
+  let emaFast = 12;
+  let emaSlow = 26;
   let bbPeriod = 20;
   let bbStdDev = 2;
   let rsiPeriod = 14;
@@ -71,6 +73,8 @@
   // SMA/EMA computed over the full history, projected onto visible window
   $: sma20vals = computeLineOverlay(assetCandles, (s) => sma(s, smaFast));
   $: sma50vals = computeLineOverlay(assetCandles, (s) => sma(s, smaSlow));
+  $: emaFastVals = computeLineOverlay(assetCandles, (s) => ema(s, emaFast));
+  $: emaSlowVals = computeLineOverlay(assetCandles, (s) => ema(s, emaSlow));
 
   function computeLineOverlay(
     all: OHLCVCandle[],
@@ -250,6 +254,11 @@
         <label>Slow <input type="number" bind:value={smaSlow} min="2" max="500" /></label>
       </fieldset>
       <fieldset class="settings-group">
+        <legend>EMA</legend>
+        <label>Fast <input type="number" bind:value={emaFast} min="2" max="500" /></label>
+        <label>Slow <input type="number" bind:value={emaSlow} min="2" max="500" /></label>
+      </fieldset>
+      <fieldset class="settings-group">
         <legend>BB</legend>
         <label>Period <input type="number" bind:value={bbPeriod} min="2" max="500" /></label>
         <label>StdDev <input type="number" bind:value={bbStdDev} min="0.5" max="5" step="0.5" /></label>
@@ -310,7 +319,7 @@
         />
       {/if}
 
-      <!-- SMA 20 -->
+      <!-- SMA fast -->
       {#if sma20vals.some((v) => v !== null)}
         <polyline
           points={linePoints(sma20vals, priceMin, priceRange, innerH)}
@@ -320,13 +329,35 @@
         />
       {/if}
 
-      <!-- SMA 50 -->
+      <!-- SMA slow -->
       {#if sma50vals.some((v) => v !== null)}
         <polyline
           points={linePoints(sma50vals, priceMin, priceRange, innerH)}
           fill="none"
           stroke="#22d3ee"
           stroke-width="1.5"
+        />
+      {/if}
+
+      <!-- EMA fast -->
+      {#if emaFastVals.some((v) => v !== null)}
+        <polyline
+          points={linePoints(emaFastVals, priceMin, priceRange, innerH)}
+          fill="none"
+          stroke="#f472b6"
+          stroke-width="1.5"
+          stroke-dasharray="4,2"
+        />
+      {/if}
+
+      <!-- EMA slow -->
+      {#if emaSlowVals.some((v) => v !== null)}
+        <polyline
+          points={linePoints(emaSlowVals, priceMin, priceRange, innerH)}
+          fill="none"
+          stroke="#34d399"
+          stroke-width="1.5"
+          stroke-dasharray="4,2"
         />
       {/if}
 
@@ -360,6 +391,10 @@
         <text x="68" y="4" fill="#22d3ee" font-size="9">SMA{smaSlow}</text>
         <rect x="108" width="10" height="2" y="-1" fill="#6366f1" />
         <text x="122" y="4" fill="#6366f1" font-size="9">BB{bbPeriod}</text>
+        <rect x="148" width="10" height="2" y="-1" fill="#f472b6" stroke-dasharray="4,2" />
+        <text x="162" y="4" fill="#f472b6" font-size="9">EMA{emaFast}</text>
+        <rect x="202" width="10" height="2" y="-1" fill="#34d399" />
+        <text x="216" y="4" fill="#34d399" font-size="9">EMA{emaSlow}</text>
       </g>
 
       <!-- Sub-pane divider -->

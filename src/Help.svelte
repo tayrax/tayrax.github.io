@@ -16,7 +16,7 @@
     <dt>Volume-spike alerts</dt>
     <dd>These alerts need about 10 minutes of data after the app loads before they can fire. This warm-up period is intentional — it prevents false alarms on a cold start.</dd>
     <dt>Charts and indicators</dt>
-    <dd>When you open the app, recent price history is loaded automatically so charts and indicators (RSI, MACD, Bollinger Bands) are ready immediately. If that initial load fails, everything still works — it just takes a few minutes of live data to catch up.</dd>
+    <dd>When you open the app, recent price history is loaded automatically so charts and indicators (SMA, EMA, Bollinger Bands, RSI, MACD) are ready immediately. If that initial load fails, everything still works — it just takes a few minutes of live data to catch up. Use the ⚙ button on any chart to adjust indicator periods to your preference.</dd>
     <dt>Indicator alerts</dt>
     <dd>RSI, MACD, and Bollinger Band alerts need a short warm-up period to gather enough history before they can fire. With a normal internet connection this is invisible — the data loads in the background before you notice anything.</dd>
     <dt>Trade proposals</dt>
