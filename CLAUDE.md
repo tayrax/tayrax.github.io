@@ -270,7 +270,8 @@ Rules:
 ## UI Conventions
 
 - **Header badge order** — badges in the `.right` header cluster grow leftward. Stable anchors (`open`/`closed` status, `?` help button) stay rightmost so their positions never shift. Conditional badges (e.g. `update`) are inserted to the left of the status badge. Do not reorder them to put conditional badges after the status badge.
-- **Chart settings panel** — the ⚙ button in the chart header controls row toggles an inline `settings-panel` div between the header and the SVG. It is always the last item in the controls row, separated by a `.sep` spacer. Settings are per-component-instance (not persisted) and affect only the chart's visual overlays — not alerts or proposals.
+- **Active nav item highlight** — the current view is highlighted in the dropdown menu with a 2 px left border (`border-left-color: #2563eb`) and a dark blue-tinted row background (`#1e2a3a`). The `active` class is applied to the `<li>` element, not the `<button>` inside it. Do not change this to a background-only highlight, an underline, a bold label, or any other pattern — the left-border accent is intentional and must be preserved.
+- **Chart settings panel** — the ⚙ button in the chart header toggles an inline `settings-panel` div between the header and the SVG. It is always the last item in the sub-pane controls group (alongside RSI/MACD), separated from them by a `.sep` spacer. On wide screens all controls appear in one row (intervals | RSI MACD | ⚙); on portrait/narrow screens (≤480 px) the header stacks: asset name, then interval buttons row, then sub-pane + ⚙ row. Settings are per-component-instance (not persisted) and affect only the chart's visual overlays — not alerts or proposals.
 
 ---
 

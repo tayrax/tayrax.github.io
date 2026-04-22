@@ -214,35 +214,39 @@
   <div class="chart-header">
     <span class="asset-label">{asset}</span>
     <div class="controls">
-      {#each CANDLE_INTERVALS as iv}
+      <div class="ctrl-row">
+        {#each CANDLE_INTERVALS as iv}
+          <button
+            class="pane-btn"
+            class:active={selectedInterval === iv}
+            on:click={() => (selectedInterval = iv)}
+            type="button"
+          >{iv}</button>
+        {/each}
+      </div>
+      <span class="sep desktop-sep"></span>
+      <div class="ctrl-row">
         <button
           class="pane-btn"
-          class:active={selectedInterval === iv}
-          on:click={() => (selectedInterval = iv)}
+          class:active={subPane === 'rsi'}
+          on:click={() => (subPane = 'rsi')}
           type="button"
-        >{iv}</button>
-      {/each}
-      <span class="sep"></span>
-      <button
-        class="pane-btn"
-        class:active={subPane === 'rsi'}
-        on:click={() => (subPane = 'rsi')}
-        type="button"
-      >RSI{rsiVal !== null ? ` ${rsiVal.toFixed(0)}` : ''}</button>
-      <button
-        class="pane-btn"
-        class:active={subPane === 'macd'}
-        on:click={() => (subPane = 'macd')}
-        type="button"
-      >MACD</button>
-      <span class="sep"></span>
-      <button
-        class="pane-btn"
-        class:active={showSettings}
-        on:click={() => (showSettings = !showSettings)}
-        type="button"
-        title="Indicator settings"
-      >⚙</button>
+        >RSI{rsiVal !== null ? ` ${rsiVal.toFixed(0)}` : ''}</button>
+        <button
+          class="pane-btn"
+          class:active={subPane === 'macd'}
+          on:click={() => (subPane = 'macd')}
+          type="button"
+        >MACD</button>
+        <span class="sep"></span>
+        <button
+          class="pane-btn"
+          class:active={showSettings}
+          on:click={() => (showSettings = !showSettings)}
+          type="button"
+          title="Indicator settings"
+        >⚙</button>
+      </div>
     </div>
   </div>
 
@@ -518,7 +522,23 @@
     font-weight: 600;
   }
   .controls { display: flex; gap: 0.3rem; align-items: center; }
+  .ctrl-row { display: flex; gap: 0.3rem; align-items: center; }
   .sep { width: 1px; height: 1rem; background: #333; margin: 0 0.15rem; }
+
+  @media (max-width: 480px) {
+    .chart-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.4rem;
+      padding-bottom: 0.6rem;
+    }
+    .controls {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.3rem;
+    }
+    .desktop-sep { display: none; }
+  }
   .pane-btn {
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;
