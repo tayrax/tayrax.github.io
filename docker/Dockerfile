@@ -1,9 +1,9 @@
-FROM debian:forky-20260406-slim
+FROM debian:forky-20260421-slim
 
 LABEL maintainer="Jeremías Casteglione <jrmsdev@gmail.com>"
-LABEL version="260414"
+LABEL version="260422"
 
-ENV TAYRAX_UPGRADE=260414
+ENV TAYRAX_UPGRADE=260422
 
 USER root:root
 WORKDIR /root
@@ -55,7 +55,7 @@ ENV HOME=/home/devel
 RUN npm version
 RUN npx --version
 
-ENV TAYRAX_CLAUDE_UPGRADE=2.1.114
+ENV TAYRAX_CLAUDE_UPGRADE=2.1.117
 
 RUN install -v -d -m 0750 ${HOME}/.local/npm \
 	&& cd ${HOME}/.local/npm \
