@@ -538,6 +538,15 @@
       gap: 0.3rem;
     }
     .desktop-sep { display: none; }
+    .settings-group {
+      flex: 0 0 100%;
+      box-sizing: border-box;
+      flex-wrap: wrap;
+      row-gap: 0.35rem;
+    }
+    .settings-group input[type='number'] {
+      width: 2.5rem;
+    }
   }
   .pane-btn {
     font-size: 0.7rem;
