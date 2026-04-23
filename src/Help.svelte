@@ -22,7 +22,7 @@
     <dt>Trade proposals</dt>
     <dd>When the indicators suggest a potential trade opportunity, the app logs a proposal on the <em>Logs</em> page. These are suggestions only — no orders are placed and no exchange account is needed. Each type of signal is rate-limited to one proposal per 30 minutes per coin to keep the log readable.</dd>
     <dt>History</dt>
-    <dd>The History page shows a full candlestick chart with indicators for any enabled coin. Choose a time range — 1D through 10Y — and the chart loads the right level of detail automatically (5-minute bars for a single day, monthly bars for a decade). Data is fetched once and cached, so switching back to a recently viewed preset is instant. Use ↻ to force a fresh fetch. For newer coins, shorter time ranges may be all that's available.</dd>
+    <dd>The History page shows a full candlestick chart with indicators for any enabled coin. Choose a time range — 1D through ALL — and the chart loads the right level of detail automatically (5-minute bars for a single day, monthly bars for the ALL preset). The ALL preset shows the complete monthly history available on the exchange; for most coins this goes back to 2017–2018. Data is fetched once and cached, so switching back to a recently viewed preset is instant. Use ↻ to force a fresh fetch.</dd>
     <dt>App updates</dt>
     <dd>The app silently checks for updates every 30 minutes. When a new version is ready, an <em>update</em> badge appears in the top-right corner. Click it to reload — otherwise the current version keeps running until you close the tab.</dd>
   </dl>

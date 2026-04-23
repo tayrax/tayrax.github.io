@@ -74,14 +74,14 @@ chosen asset and time range. Available presets:
 | 1Y | 1d | Last year |
 | 3Y | 1w | Last 3 years |
 | 5Y | 1w | Last 5 years |
-| 10Y | 1M | Last 10 years |
+| ALL | 1M | All available monthly history |
 
 Each preset fetches extra candles before the visible window (200 for 1D–1Y, 100
-for 3Y/5Y, 50 for 10Y) so that RSI, MACD, and EMA values are fully warmed-up
+for 3Y/5Y, 50 for ALL) so that RSI, MACD, and EMA values are fully warmed-up
 from the very first bar. All data is fetched in a single Binance REST call and
-cached in IndexedDB. The ↻ button forces a refresh, bypassing the cache. For
-coins launched after a preset's start date, the chart shows whatever history is
-available.
+cached in IndexedDB. The ↻ button forces a refresh, bypassing the cache. The ALL
+preset shows the complete monthly history available on Binance; for most assets
+this goes back to 2017–2018 rather than a full 10 years.
 
 ### App updates
 

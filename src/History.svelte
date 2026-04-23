@@ -15,6 +15,12 @@
   let error: string | null = null;
   let loadId = 0;
 
+  // MACD(12,26,9) requires 34 candles for a valid signal value — the most demanding
+  // default indicator. When Binance returns fewer candles than the preset's full limit
+  // (e.g. ALL monthly for assets only available since 2017), reserve this many candles
+  // as warmup so indicators are valid from the first visible candle.
+  const MIN_CHART_WARMUP = 34;
+
   async function load(asset: string, preset: HistoryPreset): Promise<void> {
     const id = ++loadId;
     loading = true;
@@ -38,6 +44,15 @@
   }
 
   $: void load(selectedAsset, selectedPreset);
+
+  // When the API returns fewer candles than the preset's full limit (e.g. ALL for
+  // assets listed on Binance only since 2017), reduce the display window so that at
+  // least MIN_CHART_WARMUP candles remain as hidden warmup history for indicators.
+  $: effectiveDisplayCount = (() => {
+    const { displayCount, limit } = PRESET_CONFIG[selectedPreset];
+    if (candles.length === 0 || candles.length >= limit) return displayCount;
+    return Math.max(1, candles.length - MIN_CHART_WARMUP);
+  })();
 
   const ttlLabel = (preset: HistoryPreset): string => {
     const ms = CACHE_TTL_MS[preset];
@@ -76,7 +91,7 @@
   {:else if error}
     <div class="state-msg error">{error}</div>
   {:else}
-    <Chart asset={selectedAsset} overrideCandles={candles} overrideDisplayCount={PRESET_CONFIG[selectedPreset].displayCount} />
+    <Chart asset={selectedAsset} overrideCandles={candles} overrideDisplayCount={effectiveDisplayCount} />
   {/if}
 </main>
 

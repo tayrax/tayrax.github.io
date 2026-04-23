@@ -24,7 +24,7 @@ export const PRESET_CONFIG: Record<HistoryPreset, PresetConfig> = {
   '1Y':  { interval: '1d', displayCount: 365, limit: 565 },  // 365 + 200 warmup
   '3Y':  { interval: '1w', displayCount: 156, limit: 256 },  // 156 + 100 warmup
   '5Y':  { interval: '1w', displayCount: 260, limit: 360 },  // 260 + 100 warmup
-  '10Y': { interval: '1M', displayCount: 120, limit: 170 },  // 120 +  50 warmup
+  'ALL': { interval: '1M', displayCount: 120, limit: 170 },  // 120 +  50 warmup
 };
 
 type BinanceKlineRow = [number, string, string, string, string, string, number, ...unknown[]];
