@@ -161,6 +161,7 @@ CoinCap API key support is planned for a future version — do not implement it 
 - jsdom has no `WebSocket`. Any test that renders `App.svelte` (or any component that calls `new WebSocket`) must stub it with `vi.stubGlobal('WebSocket', MockWebSocket)` in `beforeAll` and restore with `vi.unstubAllGlobals()` in `afterAll`. See `src/App.test.ts` for the reference implementation.
 - Vite `define` globals (`__APP_VERSION__`, `__APP_BUILD__`, `__APP_CDN__`) are declared in `vite.config.ts` and typed in `src/vite-env.d.ts`. Vitest does **not** inherit `vite.config.ts` — the same globals must also be declared in the `define` block of `vitest.config.ts` (use neutral test values: version/build `'test'`, CDN `'/'`). Whenever a new `define` entry is added to `vite.config.ts`, add a matching entry to `vitest.config.ts` or tests that render any component using that global will throw `ReferenceError` at runtime.
 - Persisted state in `localStorage` must be versioned (see `STORAGE_KEYS` in `config.ts`) — bump the version key rather than mutating an existing schema
+- Session state in `sessionStorage` must also be versioned (see `SESSION_KEYS` in `config.ts`); it clears automatically when the browser session ends so it is appropriate for ephemeral UI state like the active view
 
 ---
 

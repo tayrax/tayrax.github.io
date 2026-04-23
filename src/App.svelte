@@ -12,7 +12,7 @@
   import System from './System.svelte';
   import History from './History.svelte';
   import Help from './Help.svelte';
-  import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
+  import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, SESSION_KEYS, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
   import { enabledAssets, getExpiredDisabledAssets, clearExpiredDisabledAt } from './lib/enabled-assets';
   import type { PriceFeedStatus, PriceProvider } from './lib/provider';
@@ -41,7 +41,14 @@
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
-  let currentView: 'dashboard' | 'logs' | 'system' | 'history' = 'dashboard';
+  type AppView = 'dashboard' | 'logs' | 'system' | 'history';
+  const VIEWS: AppView[] = ['dashboard', 'logs', 'system', 'history'];
+  function restoreView(): AppView {
+    const saved = sessionStorage.getItem(SESSION_KEYS.currentView);
+    return VIEWS.includes(saved as AppView) ? (saved as AppView) : 'dashboard';
+  }
+  let currentView: AppView = restoreView();
+  $: sessionStorage.setItem(SESSION_KEYS.currentView, currentView);
   let showHelp = false;
 
   // Track enabled assets — declared early so runEvaluation can reference it safely

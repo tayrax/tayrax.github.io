@@ -100,3 +100,7 @@ export const STORAGE_KEYS = {
   enabledAssets: 'tayrax.enabledAssets.v1',
   disabledAt: 'tayrax.disabledAt.v1'
 } as const;
+
+export const SESSION_KEYS = {
+  currentView: 'tayrax.currentView.v1',
+} as const;
