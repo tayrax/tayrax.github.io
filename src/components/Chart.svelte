@@ -35,7 +35,7 @@
   const SUB_PAD_BOTTOM = 16;
 
   type SubPane = 'rsi' | 'macd';
-  let subPane: SubPane = 'rsi';
+  export let subPane: SubPane = 'rsi';
 
   // --- indicator parameters (user-configurable) ---
   let smaFast = 20;

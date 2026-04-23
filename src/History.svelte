@@ -10,6 +10,7 @@
 
   let selectedAsset: string = MANDATORY_ASSET;
   let selectedPreset: HistoryPreset = '1W';
+  let subPane: 'rsi' | 'macd' = 'rsi';
   let candles: OHLCVCandle[] = [];
   let loading = false;
   let error: string | null = null;
@@ -91,7 +92,7 @@
   {:else if error}
     <div class="state-msg error">{error}</div>
   {:else}
-    <Chart asset={selectedAsset} overrideCandles={candles} overrideDisplayCount={effectiveDisplayCount} />
+    <Chart asset={selectedAsset} overrideCandles={candles} overrideDisplayCount={effectiveDisplayCount} bind:subPane />
   {/if}
 </main>
 
