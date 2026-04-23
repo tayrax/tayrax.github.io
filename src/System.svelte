@@ -239,6 +239,19 @@
   const appCdn: string = __APP_CDN__;
 
   // ---------------------------------------------------------------------------
+  // Screen dimensions
+  // ---------------------------------------------------------------------------
+  let viewportWidth = window.innerWidth;
+  let viewportHeight = window.innerHeight;
+
+  function onResize(): void {
+    viewportWidth = window.innerWidth;
+    viewportHeight = window.innerHeight;
+  }
+  window.addEventListener('resize', onResize);
+  onDestroy(() => window.removeEventListener('resize', onResize));
+
+  // ---------------------------------------------------------------------------
   // Browser capabilities
   // ---------------------------------------------------------------------------
   const wsSupported = typeof WebSocket !== 'undefined';
@@ -350,6 +363,23 @@
         <span class="badge" class:ok={indexedDbOk} class:fail={!indexedDbOk}>
           {indexedDbOk ? 'available' : 'unavailable'}
         </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       Screen dimensions
+  ======================================================================= -->
+  <section>
+    <h2>Screen dimensions</h2>
+    <div class="info-grid">
+      <div class="info-row">
+        <span class="info-name">Viewport width</span>
+        <span class="val">{viewportWidth} px</span>
+      </div>
+      <div class="info-row">
+        <span class="info-name">Viewport height</span>
+        <span class="val">{viewportHeight} px</span>
       </div>
     </div>
   </section>
