@@ -37,7 +37,7 @@
     </details>
     <details>
       <summary>History</summary>
-      <p>The History page shows a full candlestick chart with indicators for any enabled coin. Choose a time range — 1D through ALL — and the chart loads the right level of detail automatically (5-minute bars for a single day, monthly bars for the ALL preset). The ALL preset shows the complete monthly history available on the exchange; for most coins this goes back to 2017–2018. Data is fetched once and cached, so switching back to a recently viewed preset is instant. Use ↻ to force a fresh fetch.</p>
+      <p>The History page shows a full candlestick chart with indicators for any enabled coin. Choose a time range and the chart loads the right level of detail automatically — 5-minute bars for 1D and 3D, hourly for 1W, 4-hour for 1M, daily for 6M and 1Y, weekly for 3Y and 5Y, and monthly bars for the ALL preset. The ALL preset shows the complete monthly history available on the exchange; for most coins this goes back to 2017–2018. Data is fetched once and cached, so switching back to a recently viewed preset is instant. Use ↻ to force a fresh fetch.</p>
     </details>
     <details>
       <summary>App updates</summary>

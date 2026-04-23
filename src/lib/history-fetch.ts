@@ -18,13 +18,15 @@ type PresetConfig = {
 // that all displayed candles show accurate values, matching what trading
 // platforms show when they have years of prior history.
 export const PRESET_CONFIG: Record<HistoryPreset, PresetConfig> = {
-  '1D':  { interval: '5m', displayCount: 288, limit: 488 },  // 288 + 200 warmup
-  '1W':  { interval: '1h', displayCount: 168, limit: 368 },  // 168 + 200 warmup
-  '1M':  { interval: '4h', displayCount: 180, limit: 380 },  // 180 + 200 warmup
-  '1Y':  { interval: '1d', displayCount: 365, limit: 565 },  // 365 + 200 warmup
-  '3Y':  { interval: '1w', displayCount: 156, limit: 256 },  // 156 + 100 warmup
-  '5Y':  { interval: '1w', displayCount: 260, limit: 360 },  // 260 + 100 warmup
-  'ALL': { interval: '1M', displayCount: 120, limit: 170 },  // 120 +  50 warmup
+  '1D':  { interval: '5m', displayCount: 288, limit:  488 },  // 288 + 200 warmup
+  '3D':  { interval: '5m', displayCount: 864, limit:  964 },  // 864 + 100 warmup (200 would exceed 1000-candle limit)
+  '1W':  { interval: '1h', displayCount: 168, limit:  368 },  // 168 + 200 warmup
+  '1M':  { interval: '4h', displayCount: 180, limit:  380 },  // 180 + 200 warmup
+  '6M':  { interval: '1d', displayCount: 182, limit:  382 },  // 182 + 200 warmup
+  '1Y':  { interval: '1d', displayCount: 365, limit:  565 },  // 365 + 200 warmup
+  '3Y':  { interval: '1w', displayCount: 156, limit:  256 },  // 156 + 100 warmup
+  '5Y':  { interval: '1w', displayCount: 260, limit:  360 },  // 260 + 100 warmup
+  'ALL': { interval: '1M', displayCount: 120, limit:  170 },  // 120 +  50 warmup
 };
 
 type BinanceKlineRow = [number, string, string, string, string, string, number, ...unknown[]];

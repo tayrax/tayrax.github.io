@@ -3,9 +3,9 @@
 
 import type { OHLCVCandle } from './candles';
 
-export type HistoryPreset = '1D' | '1W' | '1M' | '1Y' | '3Y' | '5Y' | 'ALL';
+export type HistoryPreset = '1D' | '3D' | '1W' | '1M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
 
-export const HISTORY_PRESETS: HistoryPreset[] = ['1D', '1W', '1M', '1Y', '3Y', '5Y', 'ALL'];
+export const HISTORY_PRESETS: HistoryPreset[] = ['1D', '3D', '1W', '1M', '6M', '1Y', '3Y', '5Y', 'ALL'];
 
 const DB_NAME = 'tayrax-history';
 const DB_VERSION = 2;
@@ -13,8 +13,10 @@ const STORE_NAME = 'candles';
 
 export const CACHE_TTL_MS: Record<HistoryPreset, number> = {
   '1D':  5  * 60 * 1000,
+  '3D':  5  * 60 * 1000,
   '1W':  60 * 60 * 1000,
   '1M':  4  * 60 * 60 * 1000,
+  '6M':  24 * 60 * 60 * 1000,
   '1Y':  24 * 60 * 60 * 1000,
   '3Y':  24 * 60 * 60 * 1000,
   '5Y':  48 * 60 * 60 * 1000,

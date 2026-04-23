@@ -69,15 +69,17 @@ chosen asset and time range. Available presets:
 | Preset | Interval | Covers |
 |--------|----------|--------|
 | 1D | 5m | Last 24 hours |
+| 3D | 5m | Last 3 days |
 | 1W | 1h | Last 7 days |
 | 1M | 4h | Last 30 days |
+| 6M | 1d | Last 6 months |
 | 1Y | 1d | Last year |
 | 3Y | 1w | Last 3 years |
 | 5Y | 1w | Last 5 years |
 | ALL | 1M | All available monthly history |
 
-Each preset fetches extra candles before the visible window (200 for 1D–1Y, 100
-for 3Y/5Y, 50 for ALL) so that RSI, MACD, and EMA values are fully warmed-up
+Each preset fetches extra candles before the visible window (200 for 1D/1W/1M/6M/1Y,
+100 for 3D/3Y/5Y, 50 for ALL) so that RSI, MACD, and EMA values are fully warmed-up
 from the very first bar. All data is fetched in a single Binance REST call and
 cached in IndexedDB. The ↻ button forces a refresh, bypassing the cache. The ALL
 preset shows the complete monthly history available on Binance; for most assets
