@@ -1,4 +1,4 @@
-const APP_VERSION = '0.1.18';
+const APP_VERSION = '0.1.19';
 const CACHE = 'tayrax-shell-v1';
 const SHELL = ['/', '/manifest.json', '/tayrax-logo.svg', '/tayrax-logo.png'];
 
