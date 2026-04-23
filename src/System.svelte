@@ -72,6 +72,26 @@
   let binanceTicker: WsTestState = makeIdle();
   let binanceKline: WsTestState = makeIdle();
 
+  type RestTestState = {
+    status: 'idle' | 'running' | 'done';
+    statusCode: number | null;
+    messagesReceived: number;
+    errorFired: boolean;
+    durationMs: number | null;
+    success: boolean;
+  };
+
+  const makeRestIdle = (): RestTestState => ({
+    status: 'idle',
+    statusCode: null,
+    messagesReceived: 0,
+    errorFired: false,
+    durationMs: null,
+    success: false,
+  });
+
+  let binanceRest: RestTestState = makeRestIdle();
+
   function runWsTest(url: string, onUpdate: (s: WsTestState) => void): void {
     const state: WsTestState = { ...makeIdle(), status: 'running' };
     onUpdate({ ...state });
@@ -139,6 +159,38 @@
     testCoincap();
     testBinanceTicker();
     testBinanceKline();
+    testBinanceRest();
+  }
+
+  function testBinanceRest(): void {
+    if (binanceRest.status === 'running') return;
+    const state: RestTestState = { ...makeRestIdle(), status: 'running' };
+    binanceRest = { ...state };
+
+    const startMs = Date.now();
+    const url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=10';
+
+    fetch(url)
+      .then(async (res) => {
+        state.statusCode = res.status;
+        if (!res.ok) {
+          state.errorFired = true;
+          binanceRest = { ...state, status: 'done', durationMs: Date.now() - startMs, success: false };
+          return;
+        }
+        const rows = await res.json();
+        state.messagesReceived = Array.isArray(rows) ? rows.length : 0;
+        state.success = state.messagesReceived > 0;
+        state.status = 'done';
+        state.durationMs = Date.now() - startMs;
+        binanceRest = { ...state };
+      })
+      .catch(() => {
+        state.errorFired = true;
+        state.status = 'done';
+        state.durationMs = Date.now() - startMs;
+        binanceRest = { ...state, success: false };
+      });
   }
 
   // ---------------------------------------------------------------------------
@@ -197,6 +249,16 @@
     try {
       localStorage.setItem('__tayrax_diag', '1');
       localStorage.removeItem('__tayrax_diag');
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
+  const indexedDbOk = (() => {
+    try {
+      const req = indexedDB.open('__tayrax_diag');
+      req.onsuccess = () => indexedDB.deleteDatabase('__tayrax_diag');
       return true;
     } catch {
       return false;
@@ -283,6 +345,79 @@
           {localStorageOk ? 'available' : 'unavailable'}
         </span>
       </div>
+      <div class="info-row">
+        <span class="info-name">IndexedDB</span>
+        <span class="badge" class:ok={indexedDbOk} class:fail={!indexedDbOk}>
+          {indexedDbOk ? 'available' : 'unavailable'}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       API diagnostics
+  ======================================================================= -->
+  <section>
+    <div class="section-header">
+      <button type="button" class="btn-run-all" on:click={runAll}
+        disabled={coincap.status === 'running' || binanceTicker.status === 'running' || binanceKline.status === 'running' || binanceRest.status === 'running'}>
+        Run all tests
+      </button>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       REST diagnostics
+  ======================================================================= -->
+  <section>
+    <h2>REST diagnostics</h2>
+    <p class="hint">
+      Verifies REST API endpoints used for data fetching (e.g., historical candles for the History view).
+    </p>
+
+    <!-- Binance REST klines (history) -->
+    <div class="ws-card">
+      <div class="ws-card-header">
+        <div>
+          <div class="ws-name">Binance klines <span class="ws-role">(history)</span></div>
+          <code class="ws-url">https://api.binance.com/api/v3/klines</code>
+        </div>
+        <button
+          type="button"
+          class="btn-test"
+          on:click={testBinanceRest}
+          disabled={binanceRest.status === 'running'}
+        >
+          {binanceRest.status === 'running' ? 'testing…' : 'Test'}
+        </button>
+      </div>
+
+      {#if binanceRest.status !== 'idle'}
+        <div class="ws-results">
+          <div class="result-row">
+            <span class="rl">Status code</span>
+            <span class="badge" class:ok={binanceRest.statusCode === 200} class:fail={binanceRest.statusCode !== null && binanceRest.statusCode !== 200} class:neutral={binanceRest.statusCode === null && binanceRest.status === 'running'}>
+              {binanceRest.statusCode === null ? (binanceRest.status === 'running' ? '…' : 'no response') : binanceRest.statusCode}
+            </span>
+          </div>
+          <div class="result-row">
+            <span class="rl">Candles received</span>
+            <span class="val">{binanceRest.messagesReceived}</span>
+          </div>
+          {#if binanceRest.status === 'done'}
+            <div class="result-row">
+              <span class="rl">Duration</span>
+              <span class="val">{binanceRest.durationMs} ms</span>
+            </div>
+            <div class="result-row">
+              <span class="rl">Outcome</span>
+              <span class="badge outcome" class:ok={binanceRest.success} class:fail={!binanceRest.success}>
+                {binanceRest.success ? 'pass — API works' : 'fail — no data received or network error'}
+              </span>
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
   </section>
 
@@ -290,13 +425,7 @@
        WebSocket diagnostics
   ======================================================================= -->
   <section>
-    <div class="section-header">
-      <h2>WebSocket diagnostics</h2>
-      <button type="button" class="btn-run-all" on:click={runAll}
-        disabled={coincap.status === 'running' || binanceTicker.status === 'running' || binanceKline.status === 'running'}>
-        Run all tests
-      </button>
-    </div>
+    <h2>WebSocket diagnostics</h2>
     <p class="hint">
       Each test opens a live connection, waits up to 10 s for data, then closes and reports results.
     </p>
@@ -482,7 +611,7 @@
   </section>
 
   <!-- ======================================================================
-       Close code reference
+       WebSocket close code reference
   ======================================================================= -->
   <section>
     <h2>WebSocket close code reference</h2>
