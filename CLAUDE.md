@@ -43,6 +43,8 @@ tayrax/
 │   │   ├── logs.ts           # Action log store (ring buffer, cross-tab synced)
 │   │   ├── candles.ts        # OHLCV candle store (ring buffer, CANDLE_HISTORY_MAX, persistence)
 │   │   ├── backfill.ts       # Binance REST /api/v3/klines historical seed on startup
+│   │   ├── history-cache.ts  # IndexedDB cache for History view (TTL-based, keyed by asset:preset)
+│   │   ├── history-fetch.ts  # Binance REST fetch for History presets (display + warm-up candles, single call)
 │   │   ├── indicators.ts     # SMA, EMA, RSI, MACD, Bollinger Bands (Phase 2)
 │   │   ├── sw-update.ts      # SW update check: updateWaiting store, watchForUpdates(), applyUpdate()
 │   │   └── enabled-assets.ts # enabledAssets store (persisted), toggleAsset(), grace-period pruning
@@ -56,9 +58,10 @@ tayrax/
 │   ├── App.test.ts           # Root app smoke tests (mounts, layout, WebSocket stubbed)
 │   ├── test-setup.ts         # Vitest global setup: jest-dom matchers + afterEach cleanup
 │   ├── vitest-matchers.d.ts  # TypeScript augmentation for jest-dom matchers on Vitest's Assertion
-│   ├── App.svelte            # Persistent shell: core logic + view switching (dashboard / logs / system) + Help modal
+│   ├── App.svelte            # Persistent shell: core logic + view switching (dashboard / logs / system / history) + Help modal
 │   ├── System.svelte         # System diagnostic view (browser caps + WS tests) — rendered by App
 │   ├── Logs.svelte           # Action-log view (reverse-chrono, filter, clear) — rendered by App
+│   ├── History.svelte        # Historical chart view (preset selector, asset dropdown, Chart with warm-up candles) — rendered by App
 │   ├── Help.svelte           # Help content — rendered inside App's modal overlay
 │   ├── app.css
 │   └── main.ts
@@ -222,6 +225,7 @@ The app is a single HTML entry point (`index.html`). `App.svelte` is the permane
 | `'dashboard'` | inline in `App.svelte` | Main trading dashboard (default) |
 | `'logs'` | `src/Logs.svelte` | Action-log viewer: reverse-chrono list of bot actions |
 | `'system'` | `src/System.svelte` | Diagnostic page: browser capabilities + live WebSocket tests |
+| `'history'` | `src/History.svelte` | Historical chart view: preset selector, asset dropdown, full-resolution Chart |
 
 `NavMenu.svelte` dispatches a `navigate` event with the target view name; `App.svelte` handles it by setting `currentView`. The URL does not change on navigation — there is no router.
 
@@ -255,6 +259,7 @@ Rules:
 - **Chart indicator settings** — `Chart.svelte` exposes a ⚙ toggle in the header that reveals an inline settings panel with number inputs for SMA fast/slow, EMA fast/slow, BB period/stddev, RSI period, and MACD fast/slow/signal. Settings are per-component-instance and not persisted (reset on page reload). Alerts and proposals are unaffected.
 - **Candle deduplication** — `applyClosedCandle` deduplicates by `openTime` (new candle wins). `prependCandles` also deduplicates, with existing (live) candles winning over historical ones. Both trim the result to `CANDLE_HISTORY_MAX` entries, keeping the most recent.
 - **Disabled-asset grace period** — When a coin is toggled off, its `disabledAt` timestamp is stored under `STORAGE_KEYS.disabledAt`. Persisted price/candle data is kept for `DISABLED_ASSET_PRUNE_AFTER_MS` (3 days). On the next app startup after that window, `getExpiredDisabledAssets()` identifies expired entries and `pruneAssets` / `pruneCandles` / `pruneVolumes` / `clearExpiredDisabledAt` remove them. Re-enabling within 3 days recovers all history instantly without a new backfill.
+- **History view warm-up candles** — Each History preset fetches more candles than it displays. The extra candles (200 for 1D–1Y, 100 for 3Y/5Y, 50 for 10Y) are used only for indicator warm-up (RSI, MACD, EMA) so that every visible bar shows accurate values. The warm-up candles are never rendered. All presets fit in a single Binance REST call (under the 1000-candle limit). Preset intervals: 1D=5m, 1W=1h, 1M=4h, 1Y=1d, 3Y/5Y=1w, 10Y=1M. Results are cached in IndexedDB (`tayrax-history`, DB version 2) with TTLs tied to interval duration (5m→5min cache, 1h→1h, 4h→4h, 1d/1w→24h, 1M→48h).
 - **SW update check** — `watchForUpdates(registration)` in `src/lib/sw-update.ts` is called from `main.ts` (PROD only) after the SW registers. It polls `registration.update()` every `SW_UPDATE_INTERVAL_MS` (30 minutes) and listens for `updatefound` → `statechange === 'installed'`. The `updateWaiting` readable store is set to `true` only when `navigator.serviceWorker.controller` is non-null (i.e. this is an upgrade, not the first install). `App.svelte` renders an **update** pill badge in the header when the store is true; clicking it calls `applyUpdate()`, which posts `'SKIP_WAITING'` to the waiting SW and reloads on `controllerchange`. Do not add `self.skipWaiting()` back to the `install` handler in `sw.js` — it would bypass the waiting state and make the badge impossible.
 
 ---

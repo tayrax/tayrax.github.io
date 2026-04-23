@@ -61,6 +61,28 @@ breakout above or below. Each signal is subject to a **30-minute cooldown per
 asset per interval** to avoid flooding the log. No exchange account is required
 — proposals are informational only.
 
+### History view
+
+The History page shows a candlestick chart with full technical indicators for a
+chosen asset and time range. Available presets:
+
+| Preset | Interval | Covers |
+|--------|----------|--------|
+| 1D | 5m | Last 24 hours |
+| 1W | 1h | Last 7 days |
+| 1M | 4h | Last 30 days |
+| 1Y | 1d | Last year |
+| 3Y | 1w | Last 3 years |
+| 5Y | 1w | Last 5 years |
+| 10Y | 1M | Last 10 years |
+
+Each preset fetches extra candles before the visible window (200 for 1D–1Y, 100
+for 3Y/5Y, 50 for 10Y) so that RSI, MACD, and EMA values are fully warmed-up
+from the very first bar. All data is fetched in a single Binance REST call and
+cached in IndexedDB. The ↻ button forces a refresh, bypassing the cache. For
+coins launched after a preset's start date, the chart shows whatever history is
+available.
+
 ### App updates
 
 The app checks for a new version every **30 minutes** by polling the service

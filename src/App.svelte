@@ -10,6 +10,7 @@
   import CoinSelector from './components/CoinSelector.svelte';
   import Logs from './Logs.svelte';
   import System from './System.svelte';
+  import History from './History.svelte';
   import Help from './Help.svelte';
   import { MANDATORY_ASSET, PRICE_PROVIDER, CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from './lib/config';
   import type { AssetId } from './lib/config';
@@ -40,7 +41,7 @@
   let status: PriceFeedStatus = 'idle';
   let permission: NotificationPermissionState = currentPermission();
   let showCoinSelector = false;
-  let currentView: 'dashboard' | 'logs' | 'system' = 'dashboard';
+  let currentView: 'dashboard' | 'logs' | 'system' | 'history' = 'dashboard';
   let showHelp = false;
 
   // Track enabled assets — declared early so runEvaluation can reference it safely
@@ -274,6 +275,8 @@
 <Logs />
 {:else if currentView === 'system'}
 <System startTime={appStartTime} />
+{:else if currentView === 'history'}
+<History />
 {/if}
 
 {#if showHelp}

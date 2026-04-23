@@ -4,15 +4,16 @@
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 
   export let size: number = 28;
-  export let currentView: 'dashboard' | 'logs' | 'system' = 'dashboard';
+  export let currentView: 'dashboard' | 'logs' | 'system' | 'history' = 'dashboard';
 
   let open = false;
   let wrapper: HTMLElement;
 
-  const dispatch = createEventDispatcher<{ navigate: 'dashboard' | 'logs' | 'system' }>();
+  const dispatch = createEventDispatcher<{ navigate: 'dashboard' | 'logs' | 'system' | 'history' }>();
 
-  const items: { view: 'dashboard' | 'logs' | 'system'; label: string }[] = [
+  const items: { view: 'dashboard' | 'logs' | 'system' | 'history'; label: string }[] = [
     { view: 'dashboard', label: 'Dashboard' },
+    { view: 'history', label: 'History' },
     { view: 'system', label: 'System' },
     { view: 'logs', label: 'Logs' },
   ];
@@ -21,7 +22,7 @@
     open = !open;
   }
 
-  function navigate(view: 'dashboard' | 'logs' | 'system'): void {
+  function navigate(view: 'dashboard' | 'logs' | 'system' | 'history'): void {
     dispatch('navigate', view);
     open = false;
   }

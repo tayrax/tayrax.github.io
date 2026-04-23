@@ -9,6 +9,12 @@
 
   export let asset: string;
   export let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
+  // When set, bypasses the live candle store and renders these candles directly.
+  // The interval selector is hidden when this prop is provided.
+  export let overrideCandles: OHLCVCandle[] | undefined = undefined;
+  // When set alongside overrideCandles, only the last N candles are shown; the
+  // rest are kept as lookback history for accurate indicator warm-up.
+  export let overrideDisplayCount: number | undefined = undefined;
 
   let candleMaps: Record<CandleInterval, CandleMap> = Object.fromEntries(
     CANDLE_INTERVALS.map((iv) => [iv, {}])
@@ -19,7 +25,7 @@
   );
   onDestroy(() => _unsubs.forEach((u) => u()));
 
-  // Number of candles to display in the visible window
+  // Number of candles to display in the visible window (live mode only)
   const VISIBLE = 60;
   // Height split: main chart and sub-pane
   const MAIN_H = 200;
@@ -45,8 +51,10 @@
 
   let showSettings = false;
 
-  $: assetCandles = candleMaps[selectedInterval][asset] ?? [];
-  $: visible = assetCandles.slice(-VISIBLE);
+  $: assetCandles = overrideCandles !== undefined ? overrideCandles : (candleMaps[selectedInterval][asset] ?? []);
+  $: visible = overrideCandles !== undefined
+    ? (overrideDisplayCount !== undefined ? assetCandles.slice(-overrideDisplayCount) : assetCandles)
+    : assetCandles.slice(-VISIBLE);
 
   // --- price scale helpers ---
   $: priceMin = visible.length
@@ -71,17 +79,18 @@
 
   // --- overlays ---
   // SMA/EMA computed over the full history, projected onto visible window
-  $: sma20vals = computeLineOverlay(assetCandles, (s) => sma(s, smaFast));
-  $: sma50vals = computeLineOverlay(assetCandles, (s) => sma(s, smaSlow));
-  $: emaFastVals = computeLineOverlay(assetCandles, (s) => ema(s, emaFast));
-  $: emaSlowVals = computeLineOverlay(assetCandles, (s) => ema(s, emaSlow));
+  $: sma20vals = computeLineOverlay(assetCandles, (s) => sma(s, smaFast), visible.length);
+  $: sma50vals = computeLineOverlay(assetCandles, (s) => sma(s, smaSlow), visible.length);
+  $: emaFastVals = computeLineOverlay(assetCandles, (s) => ema(s, emaFast), visible.length);
+  $: emaSlowVals = computeLineOverlay(assetCandles, (s) => ema(s, emaSlow), visible.length);
 
   function computeLineOverlay(
     all: OHLCVCandle[],
-    fn: (s: OHLCVCandle[]) => number | null
+    fn: (s: OHLCVCandle[]) => number | null,
+    window: number
   ): (number | null)[] {
     const result: (number | null)[] = [];
-    const start = Math.max(0, all.length - VISIBLE);
+    const start = Math.max(0, all.length - window);
     for (let i = start; i < all.length; i++) {
       result.push(fn(all.slice(0, i + 1)));
     }
@@ -108,11 +117,11 @@
   $: bbUpperVals = computeLineOverlay(assetCandles, (s) => {
     const b = bollingerBands(s, bbPeriod, bbStdDev);
     return b ? b.upper : null;
-  });
+  }, visible.length);
   $: bbLowerVals = computeLineOverlay(assetCandles, (s) => {
     const b = bollingerBands(s, bbPeriod, bbStdDev);
     return b ? b.lower : null;
-  });
+  }, visible.length);
 
   function bbAreaPath(
     upper: (number | null)[],
@@ -148,7 +157,7 @@
 
   // --- sub-pane: RSI ---
   $: rsiVal = rsi(assetCandles, rsiPeriod);
-  $: rsiVals = computeLineOverlay(assetCandles, (s) => rsi(s, rsiPeriod));
+  $: rsiVals = computeLineOverlay(assetCandles, (s) => rsi(s, rsiPeriod), visible.length);
 
   function rsiLinePoints(vals: (number | null)[]): string {
     const pts: string[] = [];
@@ -167,7 +176,7 @@
   type MACDPoint = { macd: number | null; signal: number | null; histogram: number | null };
   $: macdVals = (() => {
     const result: MACDPoint[] = [];
-    const start = Math.max(0, assetCandles.length - VISIBLE);
+    const start = Math.max(0, assetCandles.length - visible.length);
     for (let i = start; i < assetCandles.length; i++) {
       const m = macd(assetCandles.slice(0, i + 1), macdFastP, macdSlowP, macdSignalP);
       result.push({
@@ -208,23 +217,35 @@
   // --- price format ---
   const fmt = (n: number): string =>
     n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(4) : n.toPrecision(4);
+
+  // --- time axis format: adapts to the visible time span ---
+  function fmtAxisTime(ts: number, spanMs: number): string {
+    const d = new Date(ts);
+    if (spanMs > 300 * 24 * 60 * 60 * 1000)
+      return d.toLocaleDateString([], { month: 'short', year: 'numeric' });
+    if (spanMs > 6 * 24 * 60 * 60 * 1000)
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 </script>
 
 <div class="chart-wrap">
   <div class="chart-header">
     <span class="asset-label">{asset}</span>
     <div class="controls">
-      <div class="ctrl-row">
-        {#each CANDLE_INTERVALS as iv}
-          <button
-            class="pane-btn"
-            class:active={selectedInterval === iv}
-            on:click={() => (selectedInterval = iv)}
-            type="button"
-          >{iv}</button>
-        {/each}
-      </div>
-      <span class="sep desktop-sep"></span>
+      {#if overrideCandles === undefined}
+        <div class="ctrl-row">
+          {#each CANDLE_INTERVALS as iv}
+            <button
+              class="pane-btn"
+              class:active={selectedInterval === iv}
+              on:click={() => (selectedInterval = iv)}
+              type="button"
+            >{iv}</button>
+          {/each}
+        </div>
+        <span class="sep desktop-sep"></span>
+      {/if}
       <div class="ctrl-row">
         <button
           class="pane-btn"
@@ -249,6 +270,7 @@
       </div>
     </div>
   </div>
+
 
   {#if showSettings}
     <div class="settings-panel">
@@ -491,8 +513,9 @@
 
       <!-- Time axis: first and last candle time -->
       {#if visible.length > 0}
-        {@const firstTime = new Date(visible[0].openTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        {@const lastTime = new Date(visible[visible.length - 1].closeTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {@const spanMs = visible[visible.length - 1].closeTime - visible[0].openTime}
+        {@const firstTime = fmtAxisTime(visible[0].openTime, spanMs)}
+        {@const lastTime = fmtAxisTime(visible[visible.length - 1].closeTime, spanMs)}
         <text x={PADDING.left} y={MAIN_H + SUB_H - 2} fill="#555" font-size="9">{firstTime}</text>
         <text x={PADDING.left + innerW} y={MAIN_H + SUB_H - 2} text-anchor="end" fill="#555" font-size="9">{lastTime}</text>
       {/if}
