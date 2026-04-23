@@ -26,31 +26,33 @@ RUN apt-get clean \
 		/var/cache/apt/*cache.bin \
 		/tmp/apt.install
 
+ARG DEVEL_USER=devel
 ARG DEVEL_UID=1000
 ARG DEVEL_GID=1000
 
+ENV DEVEL_USER=${DEVEL_USER}
 ENV DEVEL_UID=${DEVEL_UID}
 ENV DEVEL_GID=${DEVEL_GID}
 
-RUN groupadd -o -g ${DEVEL_GID} devel \
-	&& useradd -o -d /home/devel -m -c 'devel' -g ${DEVEL_GID} -u ${DEVEL_UID} devel \
-	&& chmod -v 0750 /home/devel
+RUN groupadd -o -g ${DEVEL_GID} "${DEVEL_USER}" \
+	&& useradd -o -d "/home/${DEVEL_USER}" -m -c "${DEVEL_USER}" -g ${DEVEL_GID} -u ${DEVEL_UID} "${DEVEL_USER}" \
+	&& chmod -v 0750 "/home/${DEVEL_USER}"
 
-RUN printf 'umask %s\n' '027' >>/home/devel/.profile
+RUN printf 'umask %s\n' '027' >>"/home/${DEVEL_USER}/.profile"
 
 COPY ./user-login.sh /usr/local/bin/user-login.sh
 RUN chmod -v 0755 /usr/local/bin/user-login.sh
 
-RUN install -v -m 0750 -o devel -g devel -d /opt/tayrax \
-	&& install -v -m 0750 -o devel -g devel -d /opt/tayrax/site
+RUN install -v -m 0750 -o "${DEVEL_USER}" -g "${DEVEL_USER}" -d /opt/tayrax \
+	&& install -v -m 0750 -o "${DEVEL_USER}" -g "${DEVEL_USER}" -d /opt/tayrax/site
 
-RUN ln -vsf /home/devel/.local/npm/node_modules/.bin/claude /usr/local/bin/claude
+RUN ln -vsf "/home/${DEVEL_USER}/.local/npm/node_modules/.bin/claude" /usr/local/bin/claude
 
-USER devel:devel
-WORKDIR /home/devel
+USER ${DEVEL_USER}:${DEVEL_USER}
+WORKDIR /home/${DEVEL_USER}
 
-ENV USER=devel
-ENV HOME=/home/devel
+ENV USER=${DEVEL_USER}
+ENV HOME=/home/${DEVEL_USER}
 
 RUN npm version
 RUN npx --version

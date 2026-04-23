@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
-exec docker run -it --rm -u devel \
+_USER=$(id -un)
+exec docker run -it --rm -u "${_USER}" \
 	--name tayrax-preview \
 	--hostname tayrax-preview.local \
 	-v "${PWD}:/opt/tayrax/site" \
