@@ -19,9 +19,10 @@ from pathlib import Path
 
 WORKSPACE = Path(__file__).parent
 
-PACKAGE_JSON  = WORKSPACE / "package.json"
-MANIFEST_JSON = WORKSPACE / "static" / "manifest.json"
-SW_JS         = WORKSPACE / "static" / "sw.js"
+PACKAGE_JSON      = WORKSPACE / "package.json"
+PACKAGE_LOCK_JSON = WORKSPACE / "package-lock.json"
+MANIFEST_JSON     = WORKSPACE / "static" / "manifest.json"
+SW_JS             = WORKSPACE / "static" / "sw.js"
 
 VERSION_RE = re.compile(r"^\d+\.\d+(\.\d+)?(-\d+)?$")
 
@@ -35,6 +36,20 @@ def update_package_json(version):
     data["version"] = version
     PACKAGE_JSON.write_text(json.dumps(data, indent=2) + "\n")
     print(f"  updated    package.json  {current} -> {version}")
+
+
+def update_package_lock_json(version):
+    data = json.loads(PACKAGE_LOCK_JSON.read_text())
+    current = data.get("version", "")
+    changed = current != version
+    data["version"] = version
+    if "" in data.get("packages", {}):
+        data["packages"][""]["version"] = version
+    if not changed:
+        print(f"  unchanged  package-lock.json ({version})")
+        return
+    PACKAGE_LOCK_JSON.write_text(json.dumps(data, indent=2) + "\n")
+    print(f"  updated    package-lock.json  {current} -> {version}")
 
 
 def update_manifest_json(version):
@@ -101,6 +116,7 @@ def main():
         sys.exit(1)
 
     update_package_json(version)
+    update_package_lock_json(version)
     update_manifest_json(version)
     update_sw_js(version)
 
