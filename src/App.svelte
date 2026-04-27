@@ -304,7 +304,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.5rem;
+    padding: 1rem var(--view-padding);
     border-bottom: 1px solid #222;
   }
   .brand { display: flex; align-items: center; gap: 0.6rem; }
@@ -392,9 +392,9 @@
   .modal-close:hover { color: #ccc; }
 
   main {
-    max-width: 960px;
+    max-width: var(--view-max-width);
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: var(--view-padding);
     display: flex;
     flex-direction: column;
     gap: 1.5rem;

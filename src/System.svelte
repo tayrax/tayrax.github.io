@@ -675,9 +675,9 @@
 
 <style>
   main {
-    max-width: 860px;
+    max-width: var(--view-max-width);
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: var(--view-padding);
     display: flex;
     flex-direction: column;
     gap: 2rem;
