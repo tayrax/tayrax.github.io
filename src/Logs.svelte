@@ -118,10 +118,10 @@
   section { display: flex; flex-direction: column; gap: 0.75rem; }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #666;
+    color: var(--color-text-dim);
     margin: 0;
   }
 
@@ -136,9 +136,9 @@
   .filter { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #888; }
   .filter select {
     background: #161616;
-    color: #ccc;
-    border: 1px solid #2a2a2a;
-    border-radius: 4px;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-surface-2);
+    border-radius: var(--radius-sm);
     padding: 0.25rem 0.5rem;
     font: inherit;
     font-size: 0.82rem;
@@ -151,21 +151,21 @@
     border-radius: 5px;
     padding: 0.3rem 0.75rem;
     font: inherit;
-    font-size: 0.8rem;
+    font-size: var(--text-base);
     cursor: pointer;
   }
   .btn-clear:hover:not(:disabled) { background: #3a1f1f; color: #fca5a5; }
   .btn-clear:disabled { opacity: 0.4; cursor: default; }
 
-  .hint { font-size: 0.82rem; color: #555; margin: 0; line-height: 1.6; }
+  .hint { font-size: 0.82rem; color: var(--color-text-faint); margin: 0; line-height: 1.6; }
 
   .empty {
     padding: 2rem 1rem;
     text-align: center;
-    color: #666;
+    color: var(--color-text-dim);
     background: #161616;
-    border: 1px dashed #222;
-    border-radius: 6px;
+    border: 1px dashed var(--color-border-subtle);
+    border-radius: var(--radius-md);
     font-size: 0.9rem;
   }
 
@@ -181,7 +181,7 @@
   .log-row {
     padding: 0.55rem 0.9rem;
     background: #161616;
-    border: 1px solid #222;
+    border: 1px solid var(--color-border-subtle);
     border-radius: 5px;
     display: flex;
     flex-direction: column;
@@ -190,9 +190,9 @@
   details { width: 100%; }
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
-  details[open] { border-color: #333; }
+  details[open] { border-color: var(--color-border); }
   details[open] .log-data { margin-top: 0.25rem; }
-  .log-row:has(details):hover { border-color: #333; background: #1a1a1a; }
+  .log-row:has(details):hover { border-color: var(--color-border); background: var(--color-surface-1); }
 
   .log-main,
   details > summary.log-main {
@@ -204,7 +204,7 @@
   }
 
   .ts {
-    color: #666;
+    color: var(--color-text-dim);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.78rem;
     white-space: nowrap;
@@ -213,10 +213,10 @@
   .kind-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 0.72rem;
-    background: #2a2a2a;
-    color: #aaa;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
     white-space: nowrap;
   }
   .kind-alertDispatched { background: #1e3a5f; color: #93c5fd; }
@@ -225,10 +225,10 @@
   .interval-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 0.72rem;
-    background: #2a2a2a;
-    color: #ccc;
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-weight: 600;
     white-space: nowrap;
@@ -237,7 +237,7 @@
   .direction-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 0.72rem;
     font-weight: 700;
     white-space: nowrap;
@@ -246,7 +246,7 @@
   .direction-sell { background: #2d1a1a; color: #f87171; }
 
   .asset {
-    color: #ccc;
+    color: var(--color-text-secondary);
     font-weight: 600;
     font-size: 0.82rem;
   }
@@ -256,7 +256,7 @@
   .log-data {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.72rem;
-    color: #555;
+    color: var(--color-text-faint);
     padding-left: 0.25rem;
   }
 </style>

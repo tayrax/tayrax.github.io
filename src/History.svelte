@@ -112,7 +112,7 @@
     flex-wrap: wrap;
     gap: 0.75rem;
   }
-  h2 { font-size: 1rem; margin: 0; color: #ccc; }
+  h2 { font-size: 1rem; margin: 0; color: var(--color-text-secondary); }
   .controls {
     display: flex;
     align-items: center;
@@ -120,11 +120,11 @@
     flex-wrap: wrap;
   }
   .asset-select {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #ccc;
-    font-size: 0.8rem;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--text-base);
     font-family: inherit;
     padding: 0.2rem 0.5rem;
     cursor: pointer;
@@ -132,35 +132,35 @@
   .asset-select:focus { outline: none; border-color: #4c3d8a; }
   .presets { display: flex; gap: 0.3rem; }
   .preset-btn {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     padding: 0.2rem 0.55rem;
-    border-radius: 4px;
-    border: 1px solid #333;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     background: transparent;
-    color: #666;
+    color: var(--color-text-dim);
     cursor: pointer;
     font-family: inherit;
     line-height: 1.4;
   }
-  .preset-btn:hover { color: #aaa; border-color: #444; }
+  .preset-btn:hover { color: var(--color-text-muted); border-color: #444; }
   .preset-btn.active { background: #1e1e2e; color: #a78bfa; border-color: #4c3d8a; }
   .refresh-btn {
     font-size: 1rem;
     line-height: 1;
     padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    border: 1px solid #333;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     background: transparent;
-    color: #555;
+    color: var(--color-text-faint);
     cursor: pointer;
     font-family: inherit;
   }
-  .refresh-btn:hover:not(:disabled) { color: #aaa; border-color: #444; }
+  .refresh-btn:hover:not(:disabled) { color: var(--color-text-muted); border-color: #444; }
   .refresh-btn:disabled { opacity: 0.3; cursor: default; }
   .state-msg {
     padding: 2rem;
     text-align: center;
-    color: #555;
+    color: var(--color-text-faint);
     font-size: 0.85rem;
   }
   .state-msg.error { color: #f87171; }

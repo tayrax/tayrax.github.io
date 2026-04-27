@@ -164,8 +164,8 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: end;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-2);
     border-radius: 8px;
     padding: 1rem;
   }
@@ -173,14 +173,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    font-size: 0.8rem;
-    color: #aaa;
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
   }
   input, select {
     background: #111;
     color: #eee;
-    border: 1px solid #333;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     padding: 0.4rem 0.5rem;
     font: inherit;
   }
@@ -188,7 +188,7 @@
     background: #2563eb;
     color: white;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.9rem;
     font: inherit;
     cursor: pointer;
@@ -199,16 +199,16 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    font-size: 0.8rem;
-    color: #aaa;
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
   }
-  .interval-label { color: #aaa; }
+  .interval-label { color: var(--color-text-muted); }
   .interval-value {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 4px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     padding: 0.4rem 0.6rem;
-    color: #666;
+    color: var(--color-text-dim);
     font-family: inherit;
     font-size: inherit;
     min-width: 3rem;

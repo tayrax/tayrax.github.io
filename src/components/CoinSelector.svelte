@@ -81,9 +81,9 @@
     flex-direction: column;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-2);
+    border-radius: var(--radius-md);
   }
 
   .chips {
@@ -96,16 +96,16 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.8rem;
+    font-size: var(--text-base);
     padding: 0.2rem 0.55rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     white-space: nowrap;
   }
 
   .chip.locked {
     background: #1f1f1f;
-    border: 1px solid #333;
-    color: #555;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-faint);
     cursor: default;
   }
 
@@ -135,8 +135,8 @@
 
   .limit-msg {
     margin: 0;
-    font-size: 0.8rem;
-    color: #666;
+    font-size: var(--text-base);
+    color: var(--color-text-dim);
   }
 
   .search-row {
@@ -146,12 +146,12 @@
   .search-input {
     width: 100%;
     background: #111;
-    border: 1px solid #333;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     padding: 0.35rem 0.65rem;
     font: inherit;
     font-size: 0.85rem;
-    color: #ccc;
+    color: var(--color-text-secondary);
     box-sizing: border-box;
     outline: none;
   }
@@ -169,9 +169,9 @@
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 4px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     margin: 0;
     padding: 0.25rem 0;
     list-style: none;
@@ -189,12 +189,12 @@
     text-align: left;
     font: inherit;
     font-size: 0.85rem;
-    color: #ccc;
+    color: var(--color-text-secondary);
     cursor: pointer;
   }
 
   .suggestions li button:hover {
-    background: #2a2a2a;
+    background: var(--color-surface-2);
     color: #fff;
   }
 </style>

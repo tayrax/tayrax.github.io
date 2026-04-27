@@ -5,6 +5,29 @@
 
   --view-max-width: 1400px;
   --view-padding: 1rem;
+
+  /* surfaces */
+  --color-surface-1: #1a1a1a;
+  --color-surface-2: #2a2a2a;
+
+  /* borders */
+  --color-border: #333;
+  --color-border-subtle: #222;
+
+  /* text */
+  --color-text-secondary: #ccc;
+  --color-text-muted: #aaa;
+  --color-text-dim: #666;
+  --color-text-faint: #555;
+
+  /* border-radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-pill: 999px;
+
+  /* font sizes */
+  --text-sm: 0.75rem;
+  --text-base: 0.8rem;
 }
 
 body {

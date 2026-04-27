@@ -82,7 +82,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
   .logo-btn:hover { opacity: 0.8; }
   .dropdown {
@@ -93,9 +93,9 @@
     list-style: none;
     margin: 0;
     padding: 0.35rem 0;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 6px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     min-width: 10rem;
   }
@@ -106,7 +106,7 @@
     padding: 0.45rem 0.9rem 0.45rem 1rem;
     font-size: 0.875rem;
     font: inherit;
-    color: #aaa;
+    color: var(--color-text-muted);
     background: none;
     border: none;
     border-left: 2px solid transparent;

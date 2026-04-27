@@ -305,24 +305,24 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem var(--view-padding);
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .brand { display: flex; align-items: center; gap: 0.6rem; }
   .brand h1 { font-size: 1.1rem; margin: 0; letter-spacing: 0.04em; }
   .right { display: flex; align-items: center; gap: 0.6rem; }
   .status {
-    font-size: 0.8rem;
+    font-size: var(--text-base);
     padding: 0.25rem 0.6rem;
-    border-radius: 999px;
-    background: #2a2a2a;
-    color: #aaa;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
   }
   .status.open { background: #0f2e1d; color: #4ade80; }
   .status.closed { background: #3a1f1f; color: #f87171; }
   .update-btn {
-    font-size: 0.8rem;
+    font-size: var(--text-base);
     padding: 0.25rem 0.6rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #1a3a2a;
     color: #4ade80;
     border: 1px solid #2a5a3a;
@@ -336,11 +336,11 @@
     justify-content: center;
     width: 1.5rem;
     height: 1.5rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid #444;
-    background: #2a2a2a;
-    color: #aaa;
-    font-size: 0.8rem;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-base);
     cursor: pointer;
     font-family: inherit;
     padding: 0;
@@ -368,7 +368,7 @@
     position: relative;
     z-index: 1;
     background: #111;
-    border: 1px solid #333;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     max-width: 600px;
     width: 100%;
@@ -382,14 +382,14 @@
     right: 0.75rem;
     background: none;
     border: none;
-    color: #666;
+    color: var(--color-text-dim);
     font-size: 1.2rem;
     cursor: pointer;
     line-height: 1;
     padding: 0.25rem 0.5rem;
     font-family: inherit;
   }
-  .modal-close:hover { color: #ccc; }
+  .modal-close:hover { color: var(--color-text-secondary); }
 
   main {
     max-width: var(--view-max-width);
@@ -400,9 +400,9 @@
     gap: 1.5rem;
   }
   .perm {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-2);
+    border-radius: var(--radius-md);
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
   }
@@ -410,7 +410,7 @@
     background: #2563eb;
     color: white;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     padding: 0.4rem 0.8rem;
     cursor: pointer;
     font: inherit;
@@ -423,21 +423,21 @@
   }
   .coins-header h2 { margin: 0; }
   .toggle-btn {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    border: 1px solid #333;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     background: transparent;
-    color: #666;
+    color: var(--color-text-dim);
     cursor: pointer;
     font-family: inherit;
   }
-  .toggle-btn:hover { color: #aaa; border-color: #444; }
+  .toggle-btn:hover { color: var(--color-text-muted); border-color: #444; }
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
   }
-  h2 { font-size: 1rem; margin: 0 0 0.75rem 0; color: #ccc; }
+  h2 { font-size: 1rem; margin: 0 0 0.75rem 0; color: var(--color-text-secondary); }
   .list { margin-top: 0.75rem; }
 </style>

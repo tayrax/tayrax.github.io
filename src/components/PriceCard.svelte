@@ -66,8 +66,8 @@
 
 <style>
   .card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-2);
     border-radius: 8px;
     padding: 1rem 1.25rem;
     text-align: left;
@@ -90,14 +90,14 @@
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #aaa;
+    color: var(--color-text-muted);
   }
   .badge {
     font-size: 0.7rem;
     color: #f59e0b;
     background: #2a1f0a;
     border: 1px solid #4a3714;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 0.1rem 0.5rem;
     white-space: nowrap;
   }

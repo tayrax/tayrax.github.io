@@ -45,9 +45,9 @@
     display: flex;
     gap: 0.75rem;
     align-items: center;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-2);
+    border-radius: var(--radius-md);
     padding: 0.5rem 0.75rem;
   }
   li span { flex: 1; font-variant-numeric: tabular-nums; }
@@ -56,7 +56,7 @@
     background: transparent;
     color: #f87171;
     border: 1px solid #3a1f1f;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     padding: 0.25rem 0.5rem;
     cursor: pointer;
     font: inherit;

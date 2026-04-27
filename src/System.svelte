@@ -686,10 +686,10 @@
   section { display: flex; flex-direction: column; gap: 0.75rem; }
 
   h2 {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #666;
+    color: var(--color-text-dim);
     margin: 0;
   }
 
@@ -703,16 +703,16 @@
   .badge {
     display: inline-block;
     padding: 0.2rem 0.55rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 0.78rem;
-    background: #2a2a2a;
+    background: var(--color-surface-2);
     color: #888;
   }
   .badge.ok      { background: #0f2e1d; color: #4ade80; }
   .badge.warn    { background: #2d2310; color: #fbbf24; }
   .badge.fail    { background: #3a1f1f; color: #f87171; }
-  .badge.neutral { background: #2a2a2a; color: #888; }
-  .badge.outcome { border-radius: 4px; }
+  .badge.neutral { background: var(--color-surface-2); color: #888; }
+  .badge.outcome { border-radius: var(--radius-sm); }
 
   /* --- Browser capabilities --- */
   .info-grid { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -723,7 +723,7 @@
     padding: 0.4rem 0.75rem;
     background: #161616;
     border-radius: 5px;
-    border: 1px solid #222;
+    border: 1px solid var(--color-border-subtle);
   }
   .info-name { font-size: 0.85rem; color: #bbb; flex: 1; }
 
@@ -743,24 +743,24 @@
 
   .btn-test {
     background: #222;
-    color: #aaa;
-    border: 1px solid #333;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
     border-radius: 5px;
     padding: 0.3rem 0.75rem;
     font: inherit;
-    font-size: 0.8rem;
+    font-size: var(--text-base);
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .btn-test:hover:not(:disabled) { background: #2a2a2a; color: #eee; }
+  .btn-test:hover:not(:disabled) { background: var(--color-surface-2); color: #eee; }
   .btn-test:disabled { opacity: 0.45; cursor: default; }
 
   /* --- WS cards --- */
   .ws-card {
     background: #161616;
-    border: 1px solid #222;
-    border-radius: 6px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
     overflow: hidden;
   }
   .ws-card-header {
@@ -771,9 +771,9 @@
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #1e1e1e;
   }
-  .ws-name { font-size: 0.88rem; color: #ccc; font-weight: 600; margin-bottom: 0.2rem; }
-  .ws-role { font-weight: 400; color: #555; font-size: 0.8rem; }
-  .ws-url  { font-size: 0.72rem; color: #555; word-break: break-all; }
+  .ws-name { font-size: 0.88rem; color: var(--color-text-secondary); font-weight: 600; margin-bottom: 0.2rem; }
+  .ws-role { font-weight: 400; color: var(--color-text-faint); font-size: var(--text-base); }
+  .ws-url  { font-size: 0.72rem; color: var(--color-text-faint); word-break: break-all; }
 
   .ws-results {
     padding: 0.6rem 1rem;
@@ -787,9 +787,9 @@
     gap: 0.75rem;
     font-size: 0.82rem;
   }
-  .rl { color: #666; width: 10rem; flex-shrink: 0; padding-top: 0.15rem; }
-  .val { color: #aaa; }
-  .hint-inline { color: #555; font-size: 0.75rem; margin-left: 0.4rem; }
+  .rl { color: var(--color-text-dim); width: 10rem; flex-shrink: 0; padding-top: 0.15rem; }
+  .val { color: var(--color-text-muted); }
+  .hint-inline { color: var(--color-text-faint); font-size: var(--text-sm); margin-left: 0.4rem; }
 
   /* --- Reference table --- */
   .ref-table {
@@ -800,18 +800,18 @@
   .ref-table th {
     text-align: left;
     padding: 0.4rem 0.75rem;
-    color: #555;
+    color: var(--color-text-faint);
     font-weight: 500;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .ref-table td {
     padding: 0.4rem 0.75rem;
     color: #999;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid var(--color-surface-1);
     vertical-align: top;
   }
   .code-cell { color: #7dd3fc; font-family: monospace; white-space: nowrap; }
   .ref-table tr:last-child td { border-bottom: none; }
 
-  .hint { font-size: 0.82rem; color: #555; margin: 0; line-height: 1.6; }
+  .hint { font-size: 0.82rem; color: var(--color-text-faint); margin: 0; line-height: 1.6; }
 </style>

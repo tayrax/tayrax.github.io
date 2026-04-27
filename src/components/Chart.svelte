@@ -526,7 +526,7 @@
 <style>
   .chart-wrap {
     background: #111;
-    border: 1px solid #222;
+    border: 1px solid var(--color-border-subtle);
     border-radius: 8px;
     overflow: hidden;
   }
@@ -535,10 +535,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid var(--color-surface-1);
   }
   .asset-label {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: #888;
@@ -574,20 +574,20 @@
   .pane-btn {
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #333;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     background: transparent;
-    color: #666;
+    color: var(--color-text-dim);
     cursor: pointer;
     font-family: inherit;
     line-height: 1.4;
   }
-  .pane-btn:hover { color: #aaa; border-color: #444; }
+  .pane-btn:hover { color: var(--color-text-muted); border-color: #444; }
   .pane-btn.active { background: #1e1e2e; color: #a78bfa; border-color: #4c3d8a; }
   .empty {
     padding: 2rem;
     text-align: center;
-    color: #555;
+    color: var(--color-text-faint);
     font-size: 0.85rem;
   }
   svg { display: block; width: 100%; }
@@ -597,12 +597,12 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid var(--color-surface-1);
     background: #0d0d0d;
   }
   .settings-group {
-    border: 1px solid #2a2a2a;
-    border-radius: 4px;
+    border: 1px solid var(--color-surface-2);
+    border-radius: var(--radius-sm);
     padding: 0.25rem 0.5rem 0.35rem;
     display: flex;
     gap: 0.5rem;
@@ -611,7 +611,7 @@
   }
   .settings-group legend {
     font-size: 0.65rem;
-    color: #666;
+    color: var(--color-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0 0.2rem;
@@ -625,10 +625,10 @@
   }
   .settings-group input[type='number'] {
     width: 3.5rem;
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
     border-radius: 3px;
-    color: #ccc;
+    color: var(--color-text-secondary);
     font-size: 0.68rem;
     font-family: inherit;
     padding: 0.1rem 0.3rem;
