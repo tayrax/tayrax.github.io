@@ -236,7 +236,13 @@
   // ---------------------------------------------------------------------------
   const appVersion: string = __APP_VERSION__;
   const appBuild: string = __APP_BUILD__;
-  const appCdn: string = __APP_CDN__;
+  const appCdn: string = (() => {
+    try {
+      return new URL(__APP_CDN__).host || __APP_CDN__;
+    } catch {
+      return __APP_CDN__;
+    }
+  })();
 
   // ---------------------------------------------------------------------------
   // Screen dimensions
