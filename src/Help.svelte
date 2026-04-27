@@ -38,6 +38,7 @@
     <details>
       <summary>History</summary>
       <p>The History page shows a full candlestick chart with indicators for any enabled coin. Choose a time range and the chart loads the right level of detail automatically — 5-minute bars for 1D and 3D, hourly for 1W, 4-hour for 1M, daily for 6M and 1Y, weekly for 3Y and 5Y, and monthly bars for the ALL preset. The ALL preset shows the complete monthly history available on the exchange; for most coins this goes back to 2017–2018. Data is fetched once and cached, so switching back to a recently viewed preset is instant. Use ↻ to force a fresh fetch.</p>
+      <p>Below the chart is an <strong>Analysis</strong> panel with three on-demand tools. <em>Candle Patterns</em> scans for classic formations such as Hammer, Engulfing, Morning Star, and Three White Soldiers, marking each match with a small triangle above or below the relevant candle. <em>Support &amp; Resistance</em> identifies price levels where the chart reversed or stalled at least twice and draws dashed lines across the chart. <em>Indicator Signals</em> highlights candles where two or more indicators fired at the same point — for example, RSI oversold plus a MACD bullish cross. Each result shows a confidence rating. Adjust the indicator periods in the ⚙ panel before running an analysis to use your preferred settings. Results are cleared automatically when you change asset or time range.</p>
     </details>
     <details>
       <summary>App updates</summary>

@@ -6,6 +6,7 @@
   import { CANDLE_INTERVALS, DEFAULT_CHART_INTERVAL, type CandleInterval } from '../lib/config';
   import { sma, ema, rsi, macd, bollingerBands } from '../lib/indicators';
   import type { OHLCVCandle, CandleMap } from '../lib/candles';
+  import type { ChartAnnotation } from '../lib/chart-annotations';
 
   export let asset: string;
   export let selectedInterval: CandleInterval = DEFAULT_CHART_INTERVAL;
@@ -15,6 +16,7 @@
   // When set alongside overrideCandles, only the last N candles are shown; the
   // rest are kept as lookback history for accurate indicator warm-up.
   export let overrideDisplayCount: number | undefined = undefined;
+  export let annotations: ChartAnnotation[] = [];
 
   let candleMaps: Record<CandleInterval, CandleMap> = Object.fromEntries(
     CANDLE_INTERVALS.map((iv) => [iv, {}])
@@ -37,17 +39,17 @@
   type SubPane = 'rsi' | 'macd';
   export let subPane: SubPane = 'rsi';
 
-  // --- indicator parameters (user-configurable) ---
-  let smaFast = 20;
-  let smaSlow = 50;
-  let emaFast = 12;
-  let emaSlow = 26;
-  let bbPeriod = 20;
-  let bbStdDev = 2;
-  let rsiPeriod = 14;
-  let macdFastP = 12;
-  let macdSlowP = 26;
-  let macdSignalP = 9;
+  // --- indicator parameters (user-configurable, exported so History can bind) ---
+  export let smaFast = 20;
+  export let smaSlow = 50;
+  export let emaFast = 12;
+  export let emaSlow = 26;
+  export let bbPeriod = 20;
+  export let bbStdDev = 2;
+  export let rsiPeriod = 14;
+  export let macdFastP = 12;
+  export let macdSlowP = 26;
+  export let macdSignalP = 9;
 
   let showSettings = false;
 
@@ -407,6 +409,48 @@
           height={bodyH}
           fill={bull ? '#4ade80' : '#f87171'}
         />
+      {/each}
+
+      <!-- Annotations -->
+      {#each annotations as ann}
+        {#if ann.type === 'signal-zone'}
+          <rect
+            x={candleX(ann.visibleIndex)}
+            y={PADDING.top}
+            width={candleW + Math.floor(candleW / 2)}
+            height={innerH}
+            fill={ann.direction === 'bullish' ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)'}
+          >
+            <title>{ann.label} (conf {ann.confidence})</title>
+          </rect>
+        {:else if ann.type === 'hline'}
+          {@const hy = PADDING.top + py(ann.price, priceMin, priceRange, innerH)}
+          <line
+            x1={PADDING.left}
+            y1={hy}
+            x2={PADDING.left + innerW}
+            y2={hy}
+            stroke={ann.color}
+            stroke-width="1"
+            stroke-dasharray="4,3"
+            opacity="0.7"
+          />
+          <text x={PADDING.left + innerW - 2} y={hy - 2} text-anchor="end" fill={ann.color} font-size="9">{ann.label}</text>
+        {:else if ann.type === 'candle-marker'}
+          {@const mx = candleX(ann.visibleIndex) + Math.floor(candleW / 2)}
+          {@const myCandle = visible[ann.visibleIndex]}
+          {#if myCandle}
+            {@const myPx = ann.direction === 'above'
+              ? PADDING.top + py(myCandle.high, priceMin, priceRange, innerH) - 8
+              : PADDING.top + py(myCandle.low, priceMin, priceRange, innerH) + 8}
+            {@const tri = ann.direction === 'above'
+              ? `${mx},${myPx - 6} ${mx - 4},${myPx} ${mx + 4},${myPx}`
+              : `${mx},${myPx + 6} ${mx - 4},${myPx} ${mx + 4},${myPx}`}
+            <polygon points={tri} fill={ann.color}>
+              <title>{ann.label} (conf {ann.confidence})</title>
+            </polygon>
+          {/if}
+        {/if}
       {/each}
 
       <!-- Legend -->

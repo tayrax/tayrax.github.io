@@ -85,6 +85,22 @@ cached in IndexedDB. The ↻ button forces a refresh, bypassing the cache. The A
 preset shows the complete monthly history available on Binance; for most assets
 this goes back to 2017–2018 rather than a full 10 years.
 
+Below the chart, the **Analysis** panel provides three on-demand scanning tools:
+
+- **Candle Patterns** — detects 11 formations (Doji, Hammer, Inverted Hammer, Hanging
+  Man, Shooting Star, Bullish/Bearish Engulfing, Morning Star, Evening Star, Three
+  White Soldiers, Three Black Crows). Each match is annotated with a triangle marker
+  above (bearish) or below (bullish) the relevant candle.
+- **Support & Resistance** — collects local pivot highs and lows, clusters those within
+  0.5% of the median price, and draws dashed horizontal lines for levels with ≥2 touches.
+- **Indicator Signals** — scores each visible candle by how many independent signals
+  fire at that point (RSI extreme, MACD histogram cross, BB breach, SMA/EMA cross).
+  Candles with ≥2 signals are highlighted as a coloured column.
+
+All three modes produce a confidence badge (Low / Medium / High / Strong). The analysis
+uses the same indicator periods currently set in the ⚙ panel. Results are ephemeral —
+cleared when the asset or preset changes.
+
 ### App updates
 
 The app checks for a new version every **30 minutes** by polling the service
