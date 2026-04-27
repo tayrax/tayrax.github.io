@@ -132,7 +132,7 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-  .controls { display: flex; align-items: center; gap: 0.75rem; }
+  .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
   .filter { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #888; }
   .filter select {
     background: #161616;
