@@ -82,8 +82,8 @@
             title="{PRESET_CONFIG[preset].interval} candles · cache {ttlLabel(preset)}"
           >{preset}</button>
         {/each}
+        <button type="button" class="refresh-btn" on:click={refresh} disabled={loading} title="Force refresh">↻</button>
       </div>
-      <button type="button" class="refresh-btn" on:click={refresh} disabled={loading} title="Force refresh">↻</button>
     </div>
   </div>
 
@@ -130,7 +130,7 @@
     cursor: pointer;
   }
   .asset-select:focus { outline: none; border-color: #4c3d8a; }
-  .presets { display: flex; gap: 0.3rem; }
+  .presets { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .preset-btn {
     font-size: var(--text-sm);
     padding: 0.2rem 0.55rem;
@@ -157,6 +157,9 @@
   }
   .refresh-btn:hover:not(:disabled) { color: var(--color-text-muted); border-color: #444; }
   .refresh-btn:disabled { opacity: 0.3; cursor: default; }
+  @media (max-width: 480px) {
+    .presets { flex: 0 0 100%; }
+  }
   .state-msg {
     padding: 2rem;
     text-align: center;
